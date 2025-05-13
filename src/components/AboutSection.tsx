@@ -32,7 +32,7 @@ const AboutSection = () => {
           <div>
             <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient">About Laxnar AI Innovations</h2>
             <p className="text-lg text-gray-300 mb-6">
-              Founded with a mission to revolutionize how organizations leverage artificial intelligence, 
+              Founded by <span className="font-semibold text-white">Ayush Mahajan</span> with a mission to revolutionize how organizations leverage artificial intelligence, 
               Laxnar AI Innovations designs and develops cutting-edge AI solutions for government agencies 
               and private enterprises worldwide.
             </p>

@@ -17,6 +17,9 @@ const Footer = () => {
             <p className="text-gray-400">
               Pioneering the future of AI technology with innovative solutions for complex challenges.
             </p>
+            <p className="mt-4 text-gray-400">
+              Founded by Ayush Mahajan
+            </p>
           </div>
           
           <div>

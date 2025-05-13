@@ -85,9 +85,9 @@ const ContactSection = () => {
                   <div>
                     <h4 className="text-lg font-medium text-white">Office</h4>
                     <p className="text-gray-300">
-                      1234 Innovation Drive<br />
-                      Tech Valley, CA 95123<br />
-                      United States
+                      331 A, 1st Floor<br />
+                      Mahajan Handloom<br />
+                      Jhansi, India
                     </p>
                   </div>
                 </div>
