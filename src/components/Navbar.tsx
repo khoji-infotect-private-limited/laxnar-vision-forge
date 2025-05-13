@@ -34,7 +34,7 @@ const Navbar = () => {
             <img 
               src="/lovable-uploads/3d1eeff5-f0c5-414e-91ea-fa7825776561.png" 
               alt="Laxnar AI Innovations" 
-              className="h-10 w-auto"
+              className="h-14 w-auto" // Increased from h-10 to h-14
             />
           </a>
 

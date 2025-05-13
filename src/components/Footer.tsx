@@ -11,7 +11,7 @@ const Footer = () => {
               <img 
                 src="/lovable-uploads/3d1eeff5-f0c5-414e-91ea-fa7825776561.png" 
                 alt="Laxnar AI Innovations" 
-                className="h-12 w-auto"
+                className="h-16 w-auto" // Increased from h-12 to h-16
               />
             </a>
             <p className="text-gray-400">

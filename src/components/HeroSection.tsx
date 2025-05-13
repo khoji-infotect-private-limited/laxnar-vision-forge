@@ -115,7 +115,7 @@ const HeroSection = () => {
                 <img 
                   src="/lovable-uploads/3d1eeff5-f0c5-414e-91ea-fa7825776561.png" 
                   alt="Laxnar AI Innovations Logo" 
-                  className="w-72 h-72 object-contain"
+                  className="w-80 h-80 object-contain rounded-full" // Increased from w-72 h-72 to w-80 h-80 and added rounded-full
                 />
               </div>
             </div>
