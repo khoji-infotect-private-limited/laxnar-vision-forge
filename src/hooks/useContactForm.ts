@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import emailjs, { EmailJSResponseStatus } from "@emailjs/browser";
+import emailjs from "@emailjs/browser";
 
 interface FormData {
   name: string;
@@ -16,6 +16,9 @@ interface FormData {
 const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || "1T87mEuZ1wmDHkeNe";
 const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || "service_oeuetqc";
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_gbm2utn";
+
+// Initialize EmailJS with public key
+emailjs.init(PUBLIC_KEY);
 
 export const useContactForm = () => {
   const { toast } = useToast();
@@ -66,8 +69,7 @@ export const useContactForm = () => {
       organization: formData.organization || "Individual",
       message: formData.message,
       reply_to: formData.email,
-      // The EmailJS template likely requires a valid recipient email in the template itself
-      // If your template uses dynamic recipient, ensure these fields match EXACTLY with your template variables
+      // The EmailJS template likely requires these fields to be specified exactly
       to_name: "Laxnar AI Support",
       to_email: "laxnarai25@gmail.com"
     };
@@ -76,19 +78,17 @@ export const useContactForm = () => {
       console.log("Sending email with params:", templateParams);
       console.log("Using SERVICE_ID:", SERVICE_ID);
       console.log("Using TEMPLATE_ID:", TEMPLATE_ID);
+      console.log("Using PUBLIC_KEY:", PUBLIC_KEY);
       
-      // Initialize EmailJS with the public key before sending
-      emailjs.init(PUBLIC_KEY);
-      
-      const { status, text }: EmailJSResponseStatus = await emailjs.send(
+      const result = await emailjs.send(
         SERVICE_ID,
         TEMPLATE_ID,
         templateParams
       );
 
-      console.log("EmailJS response:", { status, text });
+      console.log("EmailJS response:", result);
 
-      if (status !== 200) throw new Error(text);
+      if (result.status !== 200) throw new Error("Email sending failed");
 
       toast({
         title: "Message sent ✔️",
