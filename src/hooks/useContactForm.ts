@@ -72,12 +72,18 @@ export const useContactForm = () => {
     };
 
     try {
+      console.log("Sending email with params:", templateParams);
+      console.log("Using SERVICE_ID:", SERVICE_ID);
+      console.log("Using TEMPLATE_ID:", TEMPLATE_ID);
+      
       const { status, text }: EmailJSResponseStatus = await emailjs.send(
         SERVICE_ID,
         TEMPLATE_ID,
         templateParams,
         PUBLIC_KEY           // passing public key here removes the need for emailjs.init()
       );
+
+      console.log("EmailJS response:", { status, text });
 
       if (status !== 200) throw new Error(text);
 
