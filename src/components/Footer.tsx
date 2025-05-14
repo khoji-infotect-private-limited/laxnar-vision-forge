@@ -1,4 +1,6 @@
 
+import { Linkedin } from "lucide-react";
+
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   
@@ -11,7 +13,7 @@ const Footer = () => {
               <img 
                 src="/lovable-uploads/3d1eeff5-f0c5-414e-91ea-fa7825776561.png" 
                 alt="Laxnar AI Innovations" 
-                className="h-16 w-auto" // Increased from h-12 to h-16
+                className="h-20 w-auto" // Increased from h-16 to h-20
               />
             </a>
             <p className="text-gray-400">
@@ -45,7 +47,17 @@ const Footer = () => {
           <div>
             <h3 className="text-xl font-semibold text-white mb-6">Connect</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">LinkedIn</a></li>
+              <li>
+                <a 
+                  href="https://www.linkedin.com/in/ayush-mahajan-19121a212/" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-gray-400 hover:text-blue-400 transition-colors flex items-center gap-2"
+                >
+                  <Linkedin size={18} />
+                  LinkedIn
+                </a>
+              </li>
               <li><a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">Twitter</a></li>
               <li><a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">GitHub</a></li>
               <li><a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">Medium</a></li>
