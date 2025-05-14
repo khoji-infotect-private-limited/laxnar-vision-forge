@@ -47,6 +47,7 @@ export const useContactForm = () => {
       });
       
       // Send the form data using EmailJS with enhanced debugging
+      // Critical fix: Adding to_email parameter which was missing
       const result = await emailjs.send(
         "service_oeuetqc", // Service ID
         "template_gbm2utn", // Template ID
@@ -56,6 +57,8 @@ export const useContactForm = () => {
           organization: formData.organization || "Not specified",
           message: formData.message,
           reply_to: formData.email,
+          to_email: "laxnarai25@gmail.com", // Adding the recipient email address
+          to_name: "Laxnar Support" // Adding recipient name
         },
         "1T87mEuZ1wmDHkeNe" // Public Key
       );
