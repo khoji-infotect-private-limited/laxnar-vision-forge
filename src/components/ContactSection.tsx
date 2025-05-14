@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,10 +30,26 @@ const ContactSection = () => {
       // Get first name for personalized response
       const firstName = formData.name.split(' ')[0] || formData.name;
       
+      // Initialize EmailJS with your user ID
+      emailjs.init("1T87mEuZ1wmDHkeNe");
+      
+      console.log("Sending email with the following parameters:");
+      console.log("Service ID:", "service_oeuetqc");
+      console.log("Template ID:", "template_oeuetqc");
+      console.log("User data:", {
+        to_name: "Laxna",
+        to_email: "laxnarai25@gmail.com",
+        from_name: formData.name,
+        first_name: firstName,
+        from_email: formData.email,
+        organization: formData.organization,
+        message: formData.message,
+      });
+      
       // Send the form data using EmailJS
       await emailjs.send(
-        'service_oeuetqc', // Service ID you provided
-        'template_oeuetqc', // Template ID you provided
+        "service_oeuetqc", // Service ID
+        "template_oeuetqc", // Template ID
         {
           // Template variables - adjust these to match your template fields
           to_name: "Laxna",
@@ -44,8 +61,7 @@ const ContactSection = () => {
           message: formData.message,
           reply_to: formData.email,
         },
-        // Your public key from EmailJS
-        '1T87mEuZ1wmDHkeNe'
+        "1T87mEuZ1wmDHkeNe" // Your public key
       );
       
       toast({
