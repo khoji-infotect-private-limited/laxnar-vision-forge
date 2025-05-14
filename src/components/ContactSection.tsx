@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast"; // Updated import path
 import { Mail, Phone, MapPin, Send } from "lucide-react";
 import emailjs from 'emailjs-com';
 
@@ -35,34 +35,34 @@ const ContactSection = () => {
       
       console.log("Sending email with the following parameters:");
       console.log("Service ID:", "service_oeuetqc");
-      console.log("Template ID:", "template_gbm2utn");  // Updated template ID
+      console.log("Template ID:", "template_gbm2utn");
       console.log("User data:", {
         to_name: "Laxna",
-        to_email: "laxnarai25@gmail.com",
         from_name: formData.name,
         first_name: firstName,
         from_email: formData.email,
         organization: formData.organization,
         message: formData.message,
+        reply_to: formData.email,
       });
       
       // Send the form data using EmailJS
-      await emailjs.send(
+      const result = await emailjs.send(
         "service_oeuetqc", // Service ID
-        "template_gbm2utn", // Updated template ID
+        "template_gbm2utn", // Template ID
         {
-          // Template variables - adjust these to match your template fields
           to_name: "Laxna",
-          to_email: "laxnarai25@gmail.com",
           from_name: formData.name,
           first_name: firstName,
           from_email: formData.email,
-          organization: formData.organization,
+          organization: formData.organization || "Not specified",
           message: formData.message,
           reply_to: formData.email,
         },
-        "1T87mEuZ1wmDHkeNe" // Your public key
+        "1T87mEuZ1wmDHkeNe" // Public Key
       );
+      
+      console.log("Email sent successfully:", result);
       
       toast({
         title: "Message Sent",
