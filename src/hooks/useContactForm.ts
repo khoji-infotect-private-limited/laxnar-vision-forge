@@ -37,7 +37,11 @@ export const useContactForm = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastSubmitResult, setLastSubmitResult] = useState<{success: boolean, message: string} | null>(null);
+  const [lastSubmitResult, setLastSubmitResult] = useState<{
+    success: boolean, 
+    message: string,
+    errorDetail?: string
+  } | null>(null);
 
   /* ------------------------------------------------------
    *  Handle input / textarea changes
@@ -75,7 +79,10 @@ export const useContactForm = () => {
         duration: 5000
       });
       setIsSubmitting(false);
-      setLastSubmitResult({success: false, message: errorMsg});
+      setLastSubmitResult({
+        success: false, 
+        message: errorMsg
+      });
       return;
     }
 
@@ -94,7 +101,8 @@ export const useContactForm = () => {
       message: formData.message,
       reply_to: formData.email,
       to_name: "Laxnar AI Support",
-      to_email: "laxnarai25@gmail.com"
+      to_email: "laxnarai25@gmail.com",
+      subject: `Contact form from ${formData.name}` // Adding subject line
     };
 
     try {
@@ -128,6 +136,16 @@ export const useContactForm = () => {
     } catch (err) {
       console.error("EmailJS error →", err);
       
+      // Extract more detailed error information
+      let errorDetail = "";
+      if (err instanceof Error) {
+        errorDetail = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        errorDetail = JSON.stringify(err, null, 2);
+      } else {
+        errorDetail = String(err);
+      }
+      
       const errorMsg = "Something went wrong – please try again later.";
       toast({
         title: "Send failed",
@@ -136,7 +154,11 @@ export const useContactForm = () => {
         duration: 5000
       });
       
-      setLastSubmitResult({success: false, message: `Error: ${err instanceof Error ? err.message : String(err)}`});
+      setLastSubmitResult({
+        success: false, 
+        message: errorMsg,
+        errorDetail
+      });
     } finally {
       setIsSubmitting(false);
     }

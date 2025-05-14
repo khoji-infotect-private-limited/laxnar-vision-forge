@@ -17,7 +17,7 @@ interface ContactFormProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
-  lastSubmitResult?: {success: boolean, message: string} | null;
+  lastSubmitResult?: {success: boolean, message: string, errorDetail?: string} | null;
 }
 
 const ContactForm = ({
@@ -154,6 +154,12 @@ const ContactForm = ({
             <p>Service ID: {import.meta.env.VITE_EMAILJS_SERVICE_ID || "service_oeuetqc"}</p>
             <p>Template ID: {import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_gbm2utn"}</p>
             <p>Form State: {isSubmitting ? "Submitting" : "Idle"}</p>
+            {lastSubmitResult && !lastSubmitResult.success && lastSubmitResult.errorDetail && (
+              <div className="mt-2 p-2 bg-red-900/20 rounded border border-red-800">
+                <p className="font-semibold text-red-300">Error Details:</p>
+                <pre className="whitespace-pre-wrap text-red-200">{lastSubmitResult.errorDetail}</pre>
+              </div>
+            )}
           </div>
         )}
       </form>
