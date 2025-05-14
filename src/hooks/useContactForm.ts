@@ -13,6 +13,8 @@ interface FormData {
 const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || "1T87mEuZ1wmDHkeNe";
 const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || "service_oeuetqc";
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_gbm2utn";
+// New template ID for admin notifications
+const ADMIN_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_ADMIN_TEMPLATE_ID || "template_admin_notif";
 
 emailjs.init(PUBLIC_KEY);
 
@@ -48,19 +50,36 @@ export const useContactForm = () => {
       return;
     }
 
-    const templateParams = {
+    // Template params for welcome email (to user)
+    const userTemplateParams = {
       email:          formData.email,
       from_name:      formData.name,
       from_email:     formData.email,
       organization:   formData.organization || "Individual",
       message:        formData.message,
-      reply_to:       formData.email,
-      to_email:       "laxnarai25@gmail.com"  // Add your Gmail address here
+      reply_to:       formData.email
+    };
+
+    // Template params for admin notification (to you)
+    const adminTemplateParams = {
+      to_email:       "laxnarai25@gmail.com",
+      from_name:      formData.name,
+      from_email:     formData.email,
+      organization:   formData.organization || "Individual",
+      message:        formData.message,
+      subject:        "New Contact Form Submission"
     };
 
     try {
-      const res = await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
-      if (res.status !== 200) throw new Error(res.text);
+      // Send welcome email to user
+      const userEmailRes = await emailjs.send(SERVICE_ID, TEMPLATE_ID, userTemplateParams);
+      
+      // Send notification email to admin
+      const adminEmailRes = await emailjs.send(SERVICE_ID, ADMIN_TEMPLATE_ID, adminTemplateParams);
+      
+      if (userEmailRes.status !== 200 || adminEmailRes.status !== 200) {
+        throw new Error("Failed to send one or more emails");
+      }
 
       toast({ 
         title: "Sent",
@@ -70,6 +89,7 @@ export const useContactForm = () => {
       setFormData({ name: "", email: "", organization: "", message: "" });
       setLastSubmitResult({ success: true, message: "Sent" });
     } catch (err: any) {
+      console.error("Email sending error:", err);
       toast({
         title: "Send failed",
         description: "Something went wrong – please try again later.",
