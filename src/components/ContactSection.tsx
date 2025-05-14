@@ -27,25 +27,32 @@ const ContactSection = () => {
     setIsSubmitting(true);
     
     try {
-      // For security reasons, we're using EmailJS's template system
-      // You'll need to set up a free EmailJS account and configure a template
-      // Add your EmailJS service ID, template ID, and user ID when you set up your account
+      // Get first name for personalized response
+      const firstName = formData.name.split(' ')[0] || formData.name;
+      
+      // Send the form data using EmailJS
       await emailjs.send(
-        'YOUR_SERVICE_ID', // You'll replace this with your EmailJS service ID
-        'YOUR_TEMPLATE_ID', // You'll replace this with your EmailJS template ID
+        'service_oeuetqc', // Service ID you provided
+        'template_oeuetqc', // Template ID (assuming same as service ID based on your message)
         {
-          to_email: 'laxnarai25@gmail.com',
+          // Template variables - adjust these to match your template fields
+          to_name: "Laxna",
+          to_email: "laxnarai25@gmail.com",
           from_name: formData.name,
+          first_name: firstName,
           from_email: formData.email,
           organization: formData.organization,
           message: formData.message,
+          reply_to: formData.email,
         },
-        'YOUR_USER_ID' // You'll replace this with your EmailJS user ID
+        // The public key is generally safe to include in the code
+        // You can get this from your EmailJS dashboard
+        'YOUR_PUBLIC_KEY' // Replace with your EmailJS public key
       );
       
       toast({
         title: "Message Sent",
-        description: "Thank you for contacting us. We'll get back to you shortly.",
+        description: `Thank you ${firstName}! Your message has been sent successfully.`,
         duration: 5000,
       });
       
