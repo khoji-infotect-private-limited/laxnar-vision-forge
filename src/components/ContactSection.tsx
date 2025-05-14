@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +32,7 @@ const ContactSection = () => {
       // Send the form data using EmailJS
       await emailjs.send(
         'service_oeuetqc', // Service ID you provided
-        'template_oeuetqc', // Template ID (assuming same as service ID based on your message)
+        'template_oeuetqc', // Template ID you provided
         {
           // Template variables - adjust these to match your template fields
           to_name: "Laxna",
@@ -45,9 +44,8 @@ const ContactSection = () => {
           message: formData.message,
           reply_to: formData.email,
         },
-        // The public key is generally safe to include in the code
-        // You can get this from your EmailJS dashboard
-        'YOUR_PUBLIC_KEY' // Replace with your EmailJS public key
+        // Your public key from EmailJS
+        '1T87mEuZ1wmDHkeNe'
       );
       
       toast({
