@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, Send } from "lucide-react";
+import emailjs from 'emailjs-com';
 
 const ContactSection = () => {
   const { toast } = useToast();
@@ -21,25 +22,50 @@ const ContactSection = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
-    setTimeout(() => {
+    try {
+      // For security reasons, we're using EmailJS's template system
+      // You'll need to set up a free EmailJS account and configure a template
+      // Add your EmailJS service ID, template ID, and user ID when you set up your account
+      await emailjs.send(
+        'YOUR_SERVICE_ID', // You'll replace this with your EmailJS service ID
+        'YOUR_TEMPLATE_ID', // You'll replace this with your EmailJS template ID
+        {
+          to_email: 'laxnarai25@gmail.com',
+          from_name: formData.name,
+          from_email: formData.email,
+          organization: formData.organization,
+          message: formData.message,
+        },
+        'YOUR_USER_ID' // You'll replace this with your EmailJS user ID
+      );
+      
       toast({
         title: "Message Sent",
         description: "Thank you for contacting us. We'll get back to you shortly.",
         duration: 5000,
       });
+      
       setFormData({
         name: "",
         email: "",
         organization: "",
         message: ""
       });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Error",
+        description: "There was an error sending your message. Please try again later.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -102,7 +128,7 @@ const ContactSection = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-200 mb-1">
-                    Full Name
+                    Full Name <span className="text-red-400">*</span>
                   </label>
                   <Input
                     id="name"
@@ -117,7 +143,7 @@ const ContactSection = () => {
                 
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-1">
-                    Email
+                    Email <span className="text-red-400">*</span>
                   </label>
                   <Input
                     id="email"
@@ -148,7 +174,7 @@ const ContactSection = () => {
               
               <div className="mb-6">
                 <label htmlFor="message" className="block text-sm font-medium text-gray-200 mb-1">
-                  Message
+                  Message <span className="text-red-400">*</span>
                 </label>
                 <Textarea
                   id="message"
@@ -163,10 +189,11 @@ const ContactSection = () => {
               
               <Button 
                 type="submit" 
-                className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto px-8"
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto px-8 flex items-center gap-2"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Sending..." : "Send Message"}
+                <Send className="w-4 h-4" />
               </Button>
             </form>
           </div>
