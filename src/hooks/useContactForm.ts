@@ -1,7 +1,7 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import emailjs from 'emailjs-com';
+import emailjs, { EmailJSResponseStatus } from "@emailjs/browser";
 
 interface FormData {
   name: string;
@@ -10,99 +10,110 @@ interface FormData {
   message: string;
 }
 
+/* ----------------------------------------------------------
+ * 1.  Keep secrets in .env – NOT in source control
+ * ----------------------------------------------------------
+ *    VITE_EMAILJS_PUBLIC_KEY   = 1T87mEuZ1wmDHkeNe
+ *    VITE_EMAILJS_SERVICE_ID   = service_oeuetqc
+ *    VITE_EMAILJS_TEMPLATE_ID  = template_gbm2utn
+ * --------------------------------------------------------- */
+
+const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "1T87mEuZ1wmDHkeNe";
+const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID || "service_oeuetqc";
+const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_gbm2utn";
+
 export const useContactForm = () => {
   const { toast } = useToast();
+
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
     organization: "",
     message: ""
   });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  /* -------------------------------------------------
+   * Initialise EmailJS **once** when the hook mounts
+   * ------------------------------------------------- */
+  useEffect(() => {
+    emailjs.init(PUBLIC_KEY);
+  }, []);
+
+  /* -----------------------------
+   * Field change handler
+   * ---------------------------- */
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  /* -----------------------------
+   * Submit handler
+   * ---------------------------- */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;           // double‑click guard
     setIsSubmitting(true);
-    
-    try {
-      console.log("Starting email submission process...");
-      
-      // Initialize EmailJS with your user ID
-      console.log("Initializing EmailJS...");
-      emailjs.init("1T87mEuZ1wmDHkeNe");
-      console.log("EmailJS initialized successfully");
-      
-      console.log("Preparing to send email with the following details:");
-      console.log("- Service ID:", "service_oeuetqc");
-      console.log("- Template ID:", "template_gbm2utn");
-      console.log("- Form data:", {
-        name: formData.name,
-        email: formData.email,
-        organization: formData.organization,
-        message: formData.message
+
+    // Simple client‑side validation
+    if (!formData.name || !formData.email || !formData.message) {
+      toast({
+        title: "Missing information",
+        description: "Name, email and message are required.",
+        variant: "destructive",
+        duration: 5000
       });
+      setIsSubmitting(false);
+      return;
+    }
+
+    /* Map EXACTLY the variables referenced in your EmailJS template.
+       ⚠️ Do NOT include `to_email` or `to_name` unless you created
+       those placeholders in the template's "To" field. */
+    const templateParams = {
+      from_name:       formData.name,
+      from_email:      formData.email,
+      organization:    formData.organization || "Individual",
+      message:         formData.message,
+      reply_to:        formData.email
+    };
+
+    try {
+      console.log("Sending email with params:", templateParams);
+      console.log("Using SERVICE_ID:", SERVICE_ID);
+      console.log("Using TEMPLATE_ID:", TEMPLATE_ID);
       
-      // Create template parameters with explicit recipient
-      const templateParams = {
-        from_name: formData.name,
-        from_email: formData.email,
-        organization: formData.organization || "Not specified",
-        message: formData.message,
-        reply_to: formData.email,
-        to_name: "Laxnar Support",
-        to_email: "laxnarai25@gmail.com"
-      };
-      
-      console.log("Sending with template parameters:", templateParams);
-      
-      // Use the full service ID, template ID, and parameters object
-      const result = await emailjs.send(
-        "service_oeuetqc", 
-        "template_gbm2utn", 
+      const { status, text }: EmailJSResponseStatus = await emailjs.send(
+        SERVICE_ID,
+        TEMPLATE_ID,
         templateParams
       );
+
+      console.log("EmailJS response:", { status, text });
       
-      console.log("Email sent successfully:", result);
-      console.log("Email status:", result.status);
-      console.log("Email response text:", result.text);
-      
+      if (status !== 200) throw new Error(text);
+
       toast({
-        title: "Message Sent",
-        description: "Your message has been sent successfully.",
-        duration: 5000,
+        title: "Message sent ✔️",
+        description: "Thank you! We'll get back to you shortly.",
+        duration: 5000
       });
-      
-      setFormData({
-        name: "",
-        email: "",
-        organization: "",
-        message: ""
-      });
-    } catch (error) {
-      console.error('Error sending email:', error);
-      
-      // More detailed error logging
-      if (error instanceof Error) {
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-      } else if (typeof error === 'object' && error !== null) {
-        console.error('Error details:', JSON.stringify(error));
-      }
-      
+
+      // Reset the form
+      setFormData({ name: "", email: "", organization: "", message: "" });
+    } catch (err) {
+      console.error("EmailJS error →", err);
       toast({
-        title: "Error",
-        description: "There was an error sending your message. Please check the console for details.",
+        title: "Send failed",
+        description: "Something went wrong – please try again later.",
         variant: "destructive",
-        duration: 5000,
+        duration: 5000
       });
     } finally {
-      console.log("Email submission process completed");
       setIsSubmitting(false);
     }
   };
