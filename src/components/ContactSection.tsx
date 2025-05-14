@@ -4,7 +4,7 @@ import ContactInfo from "./ContactInfo";
 import ContactForm from "./ContactForm";
 
 const ContactSection = () => {
-  const { formData, isSubmitting, handleChange, handleSubmit } = useContactForm();
+  const { formData, isSubmitting, handleChange, handleSubmit, lastSubmitResult } = useContactForm();
 
   return (
     <section id="contact" className="py-24 relative">
@@ -23,6 +23,7 @@ const ContactSection = () => {
             isSubmitting={isSubmitting}
             handleChange={handleChange}
             handleSubmit={handleSubmit}
+            lastSubmitResult={lastSubmitResult}
           />
         </div>
       </div>
