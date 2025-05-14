@@ -8,7 +8,6 @@ interface ContactFormProps {
   formData: {
     name: string;
     email: string;
-    organization: string;
     message: string;
   };
   isSubmitting: boolean;
@@ -83,23 +82,6 @@ const ContactForm = ({
               placeholder="john@example.com"
             />
           </div>
-        </div>
-
-        <div className="mb-6">
-          <label
-            htmlFor="organization"
-            className="block text-sm font-medium text-gray-200 mb-1"
-          >
-            Organization
-          </label>
-          <Input
-            id="organization"
-            name="organization"
-            value={formData.organization}
-            onChange={handleChange}
-            className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-400"
-            placeholder="Company Name"
-          />
         </div>
 
         <div className="mb-6">

@@ -6,7 +6,6 @@ import emailjs from "@emailjs/browser";
 interface FormData {
   name: string;
   email: string;
-  organization: string;
   message: string;
 }
 
@@ -22,7 +21,7 @@ export const useContactForm = () => {
   const { toast } = useToast();
 
   const [formData, setFormData] = useState<FormData>({
-    name: "", email: "", organization: "", message: ""
+    name: "", email: "", message: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSubmitResult, setLastSubmitResult] = useState<
@@ -55,7 +54,7 @@ export const useContactForm = () => {
       email:          formData.email,
       from_name:      formData.name,
       from_email:     formData.email,
-      organization:   formData.organization || "Individual",
+      organization:   "Individual",
       message:        formData.message,
       reply_to:       formData.email
     };
@@ -85,7 +84,7 @@ export const useContactForm = () => {
         description: "Thank you! We'll get back to you shortly.",
         duration: 5000 
       });
-      setFormData({ name: "", email: "", organization: "", message: "" });
+      setFormData({ name: "", email: "", message: "" });
       setLastSubmitResult({ success: true, message: "Sent" });
     } catch (err: any) {
       console.error("Email sending error:", err);
