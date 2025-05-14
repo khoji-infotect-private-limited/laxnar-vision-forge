@@ -48,7 +48,7 @@ export const useContactForm = () => {
 
     /* ---- variables MUST match template placeholders ---- */
     const templateParams = {
-      user_email:     "laxnarai25@gmail.com",   // recipient (matches {{user_email}})
+      email:          formData.email,     // Using form email for {{email}} template variable
       from_name:      formData.name,
       from_email:     formData.email,
       organization:   formData.organization || "Individual",
