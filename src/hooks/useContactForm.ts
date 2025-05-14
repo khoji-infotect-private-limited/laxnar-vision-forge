@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import emailjs, { EmailJSResponseStatus } from "@emailjs/browser";
 
@@ -10,16 +10,11 @@ interface FormData {
   message: string;
 }
 
-/* ----------------------------------------------------------
- * 1.  Keep secrets in .env – NOT in source control
- * ----------------------------------------------------------
- *    VITE_EMAILJS_PUBLIC_KEY   = 1T87mEuZ1wmDHkeNe
- *    VITE_EMAILJS_SERVICE_ID   = service_oeuetqc
- *    VITE_EMAILJS_TEMPLATE_ID  = template_gbm2utn
- * --------------------------------------------------------- */
-
-const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "1T87mEuZ1wmDHkeNe";
-const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID || "service_oeuetqc";
+/* ──────────────────────────────────────────────────────────
+ *  ENV VARIABLES  (fallbacks only help in local dev)
+ * ────────────────────────────────────────────────────────── */
+const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || "1T87mEuZ1wmDHkeNe";
+const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || "service_oeuetqc";
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_gbm2utn";
 
 export const useContactForm = () => {
@@ -34,16 +29,9 @@ export const useContactForm = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /* -------------------------------------------------
-   * Initialise EmailJS **once** when the hook mounts
-   * ------------------------------------------------- */
-  useEffect(() => {
-    emailjs.init(PUBLIC_KEY);
-  }, []);
-
-  /* -----------------------------
-   * Field change handler
-   * ---------------------------- */
+  /* ------------------------------------------------------
+   *  Handle input / textarea changes
+   * ---------------------------------------------------- */
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -51,15 +39,15 @@ export const useContactForm = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  /* -----------------------------
-   * Submit handler
-   * ---------------------------- */
-  const handleSubmit = async (e: React.FormEvent) => {
+  /* ------------------------------------------------------
+   *  Form submission
+   * ---------------------------------------------------- */
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSubmitting) return;           // double‑click guard
+    if (isSubmitting) return;
     setIsSubmitting(true);
 
-    // Simple client‑side validation
+    /* --- simple client‑side validation --- */
     if (!formData.name || !formData.email || !formData.message) {
       toast({
         title: "Missing information",
@@ -71,30 +59,26 @@ export const useContactForm = () => {
       return;
     }
 
-    /* Map EXACTLY the variables referenced in your EmailJS template.
-       ⚠️ Do NOT include `to_email` or `to_name` unless you created
-       those placeholders in the template's "To" field. */
+    /* --- parameters must exactly match your template vars --- */
     const templateParams = {
-      from_name:       formData.name,
-      from_email:      formData.email,
-      organization:    formData.organization || "Individual",
-      message:         formData.message,
-      reply_to:        formData.email
+      from_name:    formData.name,
+      from_email:   formData.email,
+      organization: formData.organization || "Individual",
+      message:      formData.message,
+      reply_to:     formData.email,
+      /* crucial – satisfies {{to_email}} dynamic 'To' field   */
+      to_email:     "laxnarai25@gmail.com",
+      to_name:      "Laxnar AI Support"
     };
 
     try {
-      console.log("Sending email with params:", templateParams);
-      console.log("Using SERVICE_ID:", SERVICE_ID);
-      console.log("Using TEMPLATE_ID:", TEMPLATE_ID);
-      
       const { status, text }: EmailJSResponseStatus = await emailjs.send(
         SERVICE_ID,
         TEMPLATE_ID,
-        templateParams
+        templateParams,
+        PUBLIC_KEY           // passing public key here removes the need for emailjs.init()
       );
 
-      console.log("EmailJS response:", { status, text });
-      
       if (status !== 200) throw new Error(text);
 
       toast({
@@ -103,7 +87,6 @@ export const useContactForm = () => {
         duration: 5000
       });
 
-      // Reset the form
       setFormData({ name: "", email: "", organization: "", message: "" });
     } catch (err) {
       console.error("EmailJS error →", err);
