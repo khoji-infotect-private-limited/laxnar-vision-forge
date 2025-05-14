@@ -35,7 +35,7 @@ const ContactSection = () => {
       
       console.log("Sending email with the following parameters:");
       console.log("Service ID:", "service_oeuetqc");
-      console.log("Template ID:", "template_oeuetqc");
+      console.log("Template ID:", "template_gbm2utn");  // Updated template ID
       console.log("User data:", {
         to_name: "Laxna",
         to_email: "laxnarai25@gmail.com",
@@ -49,7 +49,7 @@ const ContactSection = () => {
       // Send the form data using EmailJS
       await emailjs.send(
         "service_oeuetqc", // Service ID
-        "template_oeuetqc", // Template ID
+        "template_gbm2utn", // Updated template ID
         {
           // Template variables - adjust these to match your template fields
           to_name: "Laxna",
