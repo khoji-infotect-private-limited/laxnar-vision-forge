@@ -66,14 +66,30 @@ export const useContactForm = () => {
       setFormData({ name: "", email: "", organization: "", message: "" });
       setLastSubmitResult({ success: true, message: res.text });
     } catch (err: any) {
-      console.error("EmailJS error:", err);
-      toast({ title: "Send failed",
-              description: "Something went wrong – please try again later.",
-              variant: "destructive", duration: 5000 });
+      console.error("EmailJS error →", err);
+
+      let errorDetail: string;
+
+      // EmailJS usually returns { status: ###, text: "..." }
+      if (err && typeof err === "object" && "text" in err) {
+        errorDetail = `${(err as any).status ?? "??"} – ${(err as any).text}`;
+      } else {
+        // Fallbacks
+        try   { errorDetail = JSON.stringify(err, null, 2); }
+        catch { errorDetail = String(err); }
+      }
+
+      toast({
+        title: "Send failed",
+        description: "Something went wrong – see details below.",
+        variant: "destructive",
+        duration: 5000
+      });
+
       setLastSubmitResult({
         success: false,
         message: "API error",
-        errorDetail: err?.message ?? String(err)
+        errorDetail      // ← always a plain string now
       });
     } finally {
       setIsSubmitting(false);
