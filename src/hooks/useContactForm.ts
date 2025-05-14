@@ -54,7 +54,8 @@ export const useContactForm = () => {
       from_email:     formData.email,
       organization:   formData.organization || "Individual",
       message:        formData.message,
-      reply_to:       formData.email
+      reply_to:       formData.email,
+      to_email:       "laxnarai25@gmail.com"  // Add your Gmail address here
     };
 
     try {
