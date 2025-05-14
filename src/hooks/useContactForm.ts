@@ -62,7 +62,7 @@ export const useContactForm = () => {
       if (res.status !== 200) throw new Error(res.text);
 
       toast({ 
-        title: "Message sent ✔️",
+        title: "Sent",
         description: "Thank you! We'll get back to you shortly.",
         duration: 5000 
       });
