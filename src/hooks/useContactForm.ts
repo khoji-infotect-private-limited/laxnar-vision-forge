@@ -13,8 +13,8 @@ interface FormData {
 const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || "1T87mEuZ1wmDHkeNe";
 const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || "service_oeuetqc";
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_gbm2utn";
-// New template ID for admin notifications
-const ADMIN_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_ADMIN_TEMPLATE_ID || "template_admin_notif";
+// Admin notification template ID with the correct value
+const ADMIN_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_ADMIN_TEMPLATE_ID || "template_huy1fg9";
 
 emailjs.init(PUBLIC_KEY);
 
@@ -61,20 +61,19 @@ export const useContactForm = () => {
     };
 
     // Template params for admin notification (to you)
+    // Updated to match your template's variable names
     const adminTemplateParams = {
-      to_email:       "laxnarai25@gmail.com",
-      from_name:      formData.name,
-      from_email:     formData.email,
-      organization:   formData.organization || "Individual",
+      name:           formData.name,
+      email:          formData.email,
       message:        formData.message,
-      subject:        "New Contact Form Submission"
+      to_email:       "laxnarai25@gmail.com"
     };
 
     try {
       // Send welcome email to user
       const userEmailRes = await emailjs.send(SERVICE_ID, TEMPLATE_ID, userTemplateParams);
       
-      // Send notification email to admin
+      // Send notification email to admin with updated template ID
       const adminEmailRes = await emailjs.send(SERVICE_ID, ADMIN_TEMPLATE_ID, adminTemplateParams);
       
       if (userEmailRes.status !== 200 || adminEmailRes.status !== 200) {
