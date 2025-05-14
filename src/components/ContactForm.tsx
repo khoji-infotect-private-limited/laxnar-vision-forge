@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, CheckCircle, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
 
 interface ContactFormProps {
   formData: {
@@ -17,7 +16,7 @@ interface ContactFormProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
-  lastSubmitResult?: {success: boolean, message: string, errorDetail?: string} | null;
+  lastSubmitResult?: {success: boolean, message: string} | null;
 }
 
 const ContactForm = ({
@@ -27,13 +26,6 @@ const ContactForm = ({
   handleSubmit,
   lastSubmitResult
 }: ContactFormProps) => {
-  const [showDebugInfo, setShowDebugInfo] = useState(false);
-  
-  useEffect(() => {
-    // Log form state on mount
-    console.log("ContactForm mounted with formData:", formData);
-  }, [formData]);
-  
   return (
     <div className="lg:col-span-2 glass-card">
       <form onSubmit={handleSubmit} className="p-8">
@@ -128,40 +120,14 @@ const ContactForm = ({
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
-          <Button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto px-8 flex items-center gap-2"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Sending..." : "Send Message"}
-            <Send className="w-4 h-4" />
-          </Button>
-          
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => setShowDebugInfo(!showDebugInfo)}
-            className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white w-full md:w-auto"
-          >
-            {showDebugInfo ? "Hide Debug Info" : "Show Debug Info"}
-          </Button>
-        </div>
-        
-        {showDebugInfo && (
-          <div className="mt-4 p-3 bg-gray-800/50 rounded border border-gray-700 text-xs text-gray-300 font-mono overflow-auto">
-            <p className="font-semibold text-gray-200 mb-1">Debug Information:</p>
-            <p>Service ID: {import.meta.env.VITE_EMAILJS_SERVICE_ID || "service_oeuetqc"}</p>
-            <p>Template ID: {import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_gbm2utn"}</p>
-            <p>Form State: {isSubmitting ? "Submitting" : "Idle"}</p>
-            {lastSubmitResult && !lastSubmitResult.success && lastSubmitResult.errorDetail && (
-              <div className="mt-2 p-2 bg-red-900/20 rounded border border-red-800">
-                <p className="font-semibold text-red-300">Error Details:</p>
-                <pre className="whitespace-pre-wrap text-red-200">{lastSubmitResult.errorDetail}</pre>
-              </div>
-            )}
-          </div>
-        )}
+        <Button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto px-8 flex items-center gap-2"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Sending..." : "Send Message"}
+          <Send className="w-4 h-4" />
+        </Button>
       </form>
     </div>
   );

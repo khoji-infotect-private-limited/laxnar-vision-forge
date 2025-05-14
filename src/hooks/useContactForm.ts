@@ -14,7 +14,7 @@ const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || "1T87mEuZ1wmDHke
 const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || "service_oeuetqc";
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_gbm2utn";
 
-emailjs.init(PUBLIC_KEY);            // initialise once
+emailjs.init(PUBLIC_KEY);
 
 export const useContactForm = () => {
   const { toast } = useToast();
@@ -24,7 +24,7 @@ export const useContactForm = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSubmitResult, setLastSubmitResult] = useState<
-    { success: boolean; message: string; errorDetail?: string } | null
+    { success: boolean; message: string } | null
   >(null);
 
   const handleChange = (
@@ -37,18 +37,19 @@ export const useContactForm = () => {
     setIsSubmitting(true);
     setLastSubmitResult(null);
 
-    /* ---- minimal validation ---- */
     if (!formData.name || !formData.email || !formData.message) {
-      toast({ title: "Missing information",
-              description: "Name, email and message are required.",
-              variant: "destructive", duration: 5000 });
+      toast({ 
+        title: "Missing information",
+        description: "Name, email and message are required.",
+        variant: "destructive", 
+        duration: 5000 
+      });
       setIsSubmitting(false);
       return;
     }
 
-    /* ---- variables MUST match template placeholders ---- */
     const templateParams = {
-      email:          formData.email,     // Using form email for {{email}} template variable
+      email:          formData.email,
       from_name:      formData.name,
       from_email:     formData.email,
       organization:   formData.organization || "Individual",
@@ -60,36 +61,23 @@ export const useContactForm = () => {
       const res = await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
       if (res.status !== 200) throw new Error(res.text);
 
-      toast({ title: "Message sent ✔️",
-              description: "Thank you! We'll get back to you shortly.",
-              duration: 5000 });
+      toast({ 
+        title: "Message sent ✔️",
+        description: "Thank you! We'll get back to you shortly.",
+        duration: 5000 
+      });
       setFormData({ name: "", email: "", organization: "", message: "" });
       setLastSubmitResult({ success: true, message: res.text });
     } catch (err: any) {
-      console.error("EmailJS error →", err);
-
-      let errorDetail: string;
-
-      // EmailJS usually returns { status: ###, text: "..." }
-      if (err && typeof err === "object" && "text" in err) {
-        errorDetail = `${(err as any).status ?? "??"} – ${(err as any).text}`;
-      } else {
-        // Fallbacks
-        try   { errorDetail = JSON.stringify(err, null, 2); }
-        catch { errorDetail = String(err); }
-      }
-
       toast({
         title: "Send failed",
-        description: "Something went wrong – see details below.",
+        description: "Something went wrong – please try again later.",
         variant: "destructive",
         duration: 5000
       });
-
       setLastSubmitResult({
         success: false,
-        message: "API error",
-        errorDetail      // ← always a plain string now
+        message: "Failed to send message"
       });
     } finally {
       setIsSubmitting(false);
