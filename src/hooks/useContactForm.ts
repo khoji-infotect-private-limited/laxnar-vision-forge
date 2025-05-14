@@ -47,21 +47,22 @@ export const useContactForm = () => {
         message: formData.message
       });
       
-      // Send the form data using EmailJS with enhanced debugging
-      // Note: In EmailJS, recipient email should be configured in the EmailJS template
-      // and not necessarily passed as a parameter in the code
+      // EmailJS template parameters - ensure we provide all required fields
+      // The recipient email must be configured in the EmailJS dashboard/template
       const templateParams = {
         from_name: formData.name,
         from_email: formData.email,
         organization: formData.organization || "Not specified",
         message: formData.message,
         reply_to: formData.email,
-        // Adding recipient info directly in template parameters
-        to_name: "Laxnar Support"
+        to_name: "Laxnar Support",
+        // Add to_email explicitly to be used by EmailJS template
+        to_email: "laxnarai25@gmail.com"
       };
       
       console.log("Sending with template parameters:", templateParams);
       
+      // Send email using EmailJS
       const result = await emailjs.send(
         "service_oeuetqc", // Service ID
         "template_gbm2utn", // Template ID
