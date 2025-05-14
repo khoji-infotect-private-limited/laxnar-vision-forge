@@ -30,33 +30,28 @@ export const useContactForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Get first name for personalized response
-      const firstName = formData.name.split(' ')[0] || formData.name;
+      console.log("Starting email submission process...");
       
       // Initialize EmailJS with your user ID
+      console.log("Initializing EmailJS...");
       emailjs.init("1T87mEuZ1wmDHkeNe");
+      console.log("EmailJS initialized successfully");
       
-      console.log("Sending email with the following parameters:");
-      console.log("Service ID:", "service_oeuetqc");
-      console.log("Template ID:", "template_gbm2utn");
-      console.log("User data:", {
-        to_name: "Laxna",
-        from_name: formData.name,
-        first_name: firstName,
-        from_email: formData.email,
+      console.log("Preparing to send email with the following details:");
+      console.log("- Service ID:", "service_oeuetqc");
+      console.log("- Form data:", {
+        name: formData.name,
+        email: formData.email,
         organization: formData.organization,
-        message: formData.message,
-        reply_to: formData.email,
+        message: formData.message
       });
       
-      // Send the form data using EmailJS
+      // Send the form data using EmailJS with enhanced debugging
       const result = await emailjs.send(
         "service_oeuetqc", // Service ID
         "template_gbm2utn", // Template ID
         {
-          to_name: "Laxna",
           from_name: formData.name,
-          first_name: firstName,
           from_email: formData.email,
           organization: formData.organization || "Not specified",
           message: formData.message,
@@ -66,10 +61,12 @@ export const useContactForm = () => {
       );
       
       console.log("Email sent successfully:", result);
+      console.log("Email status:", result.status);
+      console.log("Email response text:", result.text);
       
       toast({
         title: "Message Sent",
-        description: `Thank you ${firstName}! Your message has been sent successfully.`,
+        description: "Your message has been sent successfully.",
         duration: 5000,
       });
       
@@ -81,13 +78,22 @@ export const useContactForm = () => {
       });
     } catch (error) {
       console.error('Error sending email:', error);
+      
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      
       toast({
         title: "Error",
-        description: "There was an error sending your message. Please try again later.",
+        description: "There was an error sending your message. Please check the console for details.",
         variant: "destructive",
         duration: 5000,
       });
     } finally {
+      console.log("Email submission process completed");
       setIsSubmitting(false);
     }
   };
