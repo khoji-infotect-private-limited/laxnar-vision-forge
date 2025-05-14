@@ -67,7 +67,7 @@ export const useContactForm = () => {
         duration: 5000 
       });
       setFormData({ name: "", email: "", organization: "", message: "" });
-      setLastSubmitResult({ success: true, message: res.text });
+      setLastSubmitResult({ success: true, message: "Sent" });
     } catch (err: any) {
       toast({
         title: "Send failed",
