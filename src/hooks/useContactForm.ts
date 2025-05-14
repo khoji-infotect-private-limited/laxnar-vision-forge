@@ -39,6 +39,7 @@ export const useContactForm = () => {
       
       console.log("Preparing to send email with the following details:");
       console.log("- Service ID:", "service_oeuetqc");
+      console.log("- Template ID:", "template_gbm2utn");
       console.log("- Form data:", {
         name: formData.name,
         email: formData.email,
@@ -47,19 +48,24 @@ export const useContactForm = () => {
       });
       
       // Send the form data using EmailJS with enhanced debugging
-      // Critical fix: Adding to_email parameter which was missing
+      // Note: In EmailJS, recipient email should be configured in the EmailJS template
+      // and not necessarily passed as a parameter in the code
+      const templateParams = {
+        from_name: formData.name,
+        from_email: formData.email,
+        organization: formData.organization || "Not specified",
+        message: formData.message,
+        reply_to: formData.email,
+        // Adding recipient info directly in template parameters
+        to_name: "Laxnar Support"
+      };
+      
+      console.log("Sending with template parameters:", templateParams);
+      
       const result = await emailjs.send(
         "service_oeuetqc", // Service ID
         "template_gbm2utn", // Template ID
-        {
-          from_name: formData.name,
-          from_email: formData.email,
-          organization: formData.organization || "Not specified",
-          message: formData.message,
-          reply_to: formData.email,
-          to_email: "laxnarai25@gmail.com", // Adding the recipient email address
-          to_name: "Laxnar Support" // Adding recipient name
-        },
+        templateParams,
         "1T87mEuZ1wmDHkeNe" // Public Key
       );
       
@@ -87,6 +93,8 @@ export const useContactForm = () => {
         console.error('Error name:', error.name);
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
+      } else if (typeof error === 'object' && error !== null) {
+        console.error('Error details:', JSON.stringify(error));
       }
       
       toast({
