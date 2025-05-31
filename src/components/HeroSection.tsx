@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 
@@ -110,19 +109,12 @@ const HeroSection = () => {
           
           <div className="w-full md:w-1/2 flex justify-center">
             <div className="relative animate-float">
-              {/* Moving neon light rings with enhanced visibility */}
-              <div className="absolute inset-0 rounded-full">
-                <div className="absolute inset-0 rounded-full border-4 border-blue-400/60 shadow-[0_0_20px_rgba(59,130,246,0.5)] animate-spin" style={{ animationDuration: '8s' }}></div>
-                <div className="absolute inset-3 rounded-full border-2 border-blue-500/70 shadow-[0_0_15px_rgba(59,130,246,0.4)] animate-spin" style={{ animationDuration: '6s', animationDirection: 'reverse' }}></div>
-                <div className="absolute inset-6 rounded-full border-2 border-blue-300/50 shadow-[0_0_10px_rgba(147,197,253,0.3)] animate-spin" style={{ animationDuration: '10s' }}></div>
-              </div>
-              
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full blur opacity-30"></div>
               <div className="relative bg-gray-900/50 p-8 rounded-full border border-blue-500/20 backdrop-blur-sm">
                 <img 
                   src="/lovable-uploads/2c381b53-6201-48ed-8584-ed1951f84569.png" 
                   alt="Laxnar AI Innovations Logo" 
-                  className="w-72 h-72 object-contain rounded-full"
+                  className="w-64 h-64 object-contain rounded-full"
                 />
               </div>
             </div>
