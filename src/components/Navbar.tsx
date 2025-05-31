@@ -32,9 +32,9 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           <a href="#" className="flex items-center gap-3">
             <img 
-              src="/lovable-uploads/3d1eeff5-f0c5-414e-91ea-fa7825776561.png" 
+              src="/lovable-uploads/4f8610eb-6b18-41eb-b5f3-6dabcc4cd82a.png" 
               alt="Laxnar AI Innovations" 
-              className="h-14 w-auto" // Increased from h-10 to h-14
+              className="h-16 w-auto" // Increased from h-14 to h-16 to make it slightly bigger
             />
           </a>
 

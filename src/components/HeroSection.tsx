@@ -113,9 +113,9 @@ const HeroSection = () => {
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full blur opacity-30"></div>
               <div className="relative bg-gray-900/50 p-8 rounded-full border border-blue-500/20 backdrop-blur-sm">
                 <img 
-                  src="/lovable-uploads/3d1eeff5-f0c5-414e-91ea-fa7825776561.png" 
+                  src="/lovable-uploads/2c381b53-6201-48ed-8584-ed1951f84569.png" 
                   alt="Laxnar AI Innovations Logo" 
-                  className="w-80 h-80 object-contain rounded-full" // Increased from w-72 h-72 to w-80 h-80 and added rounded-full
+                  className="w-80 h-80 object-contain rounded-full"
                 />
               </div>
             </div>
