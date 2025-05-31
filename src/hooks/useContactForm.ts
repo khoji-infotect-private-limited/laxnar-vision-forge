@@ -65,7 +65,7 @@ export const useContactForm = () => {
       name:           formData.name,
       email:          formData.email,
       message:        formData.message,
-      to_email:       "laxnarai25@gmail.com"
+      to_email:       "Info@laxnar.ai"
     };
 
     try {
