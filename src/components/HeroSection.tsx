@@ -86,6 +86,16 @@ const HeroSection = () => {
 
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/lovable-uploads/82214d08-4a96-45f4-a0b5-b94ba9bd94a8.png)' }}
+      />
+      
+      {/* Dark overlay to maintain readability */}
+      <div className="absolute inset-0 bg-black/40" />
+      
+      {/* Canvas for particles */}
       <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full" />
       
       <div className="container relative z-10 mx-auto px-4 py-20 mt-16">
