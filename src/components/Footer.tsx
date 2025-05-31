@@ -11,9 +11,9 @@ const Footer = () => {
           <div className="md:col-span-1">
             <a href="#" className="inline-block mb-6">
               <img 
-                src="/lovable-uploads/3d1eeff5-f0c5-414e-91ea-fa7825776561.png" 
+                src="/lovable-uploads/21873435-3afe-467f-b335-d7b66953c243.png" 
                 alt="Laxnar AI Innovations" 
-                className="h-20 w-auto" // Increased from h-16 to h-20
+                className="h-20 w-auto" 
               />
             </a>
             <p className="text-gray-400">
