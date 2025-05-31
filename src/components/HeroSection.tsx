@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 
@@ -109,11 +110,11 @@ const HeroSection = () => {
           
           <div className="w-full md:w-1/2 flex justify-center">
             <div className="relative animate-float">
-              {/* Moving neon light rings */}
+              {/* Moving neon light rings with enhanced visibility */}
               <div className="absolute inset-0 rounded-full">
-                <div className="absolute inset-0 rounded-full border-2 border-blue-400/30 animate-spin" style={{ animationDuration: '8s' }}></div>
-                <div className="absolute inset-2 rounded-full border border-blue-500/50 animate-spin" style={{ animationDuration: '6s', animationDirection: 'reverse' }}></div>
-                <div className="absolute inset-4 rounded-full border border-blue-300/40 animate-spin" style={{ animationDuration: '10s' }}></div>
+                <div className="absolute inset-0 rounded-full border-4 border-blue-400/60 shadow-[0_0_20px_rgba(59,130,246,0.5)] animate-spin" style={{ animationDuration: '8s' }}></div>
+                <div className="absolute inset-3 rounded-full border-2 border-blue-500/70 shadow-[0_0_15px_rgba(59,130,246,0.4)] animate-spin" style={{ animationDuration: '6s', animationDirection: 'reverse' }}></div>
+                <div className="absolute inset-6 rounded-full border-2 border-blue-300/50 shadow-[0_0_10px_rgba(147,197,253,0.3)] animate-spin" style={{ animationDuration: '10s' }}></div>
               </div>
               
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full blur opacity-30"></div>
