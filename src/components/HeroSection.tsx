@@ -109,6 +109,10 @@ const HeroSection = () => {
           
           <div className="w-full md:w-1/2 flex justify-center">
             <div className="relative animate-float">
+              {/* Animated neon glow background */}
+              <div className="absolute inset-0 rounded-full bg-blue-500/20 blur-xl animate-pulse"></div>
+              <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-blue-500/30 via-blue-400/40 to-blue-500/30 blur-lg animate-spin" style={{ animationDuration: '4s' }}></div>
+              
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full blur opacity-30"></div>
               <div className="relative bg-gray-900/50 p-8 rounded-full border border-blue-500/20 backdrop-blur-sm">
                 <img 
