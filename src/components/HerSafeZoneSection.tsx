@@ -9,8 +9,12 @@ const HerSafeZoneSection = () => {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <Shield className="w-8 h-8 text-rose-400" />
+          <div className="inline-flex items-center gap-4 mb-4">
+            <img 
+              src="/lovable-uploads/960ce38d-cdf8-4b51-97d1-33263c0d26f3.png" 
+              alt="HerSafeZone Logo" 
+              className="w-16 h-16 rounded-xl"
+            />
             <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-rose-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
               HerSafeZone
             </h2>

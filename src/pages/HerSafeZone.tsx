@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -79,8 +78,12 @@ const HerSafeZone = () => {
               Back to Home
             </Link>
             
-            <div className="inline-flex items-center gap-3 mb-6">
-              <Shield className="w-12 h-12 text-rose-400" />
+            <div className="inline-flex items-center gap-4 mb-6">
+              <img 
+                src="/lovable-uploads/960ce38d-cdf8-4b51-97d1-33263c0d26f3.png" 
+                alt="HerSafeZone Logo" 
+                className="w-20 h-20 rounded-xl"
+              />
               <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-rose-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
                 HerSafeZone
               </h1>
