@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -73,10 +74,12 @@ const HerSafeZone = () => {
       <section className="pt-24 pb-16 relative overflow-hidden bg-gradient-to-br from-rose-900/20 via-purple-900/20 to-pink-900/20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8">
-            <Link to="/" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </Link>
+            <div className="flex justify-center mb-6">
+              <Link to="/" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+                Back to Home
+              </Link>
+            </div>
             
             <div className="inline-flex items-center gap-4 mb-6">
               <img 
