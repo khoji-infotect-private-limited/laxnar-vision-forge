@@ -9,7 +9,7 @@ const researchPapers = [
     journal: "NIPS 2017",
     category: "Transformer Architecture",
     description: "Foundational research that introduced the Transformer architecture, which we leverage as the core building block for our QuantumNLP language models and contextual understanding systems.",
-    image: "/lovable-uploads/8457afc9-38f6-4e29-81bc-a0171275d920.png",
+    image: "/lovable-uploads/369ec3e0-2de9-4f5b-b511-4c475897763f.png",
     metrics: ["8,000+ citations", "Transformer backbone", "Self-attention mechanism"],
     applicationInLaxnar: "Core architecture for our natural language processing models",
     paperUrl: "https://arxiv.org/abs/1706.03762"

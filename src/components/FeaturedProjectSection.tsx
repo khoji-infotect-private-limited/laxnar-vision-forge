@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Navigation } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -21,7 +20,7 @@ const FeaturedProjectSection = () => {
               <div className="relative rounded-lg overflow-hidden aspect-video">
                 <iframe
                   src="https://drive.google.com/file/d/1dbHjfdtuUVgD54zFkCgY6URapdToxP-1/preview"
-                  title="Navaique - AI Navigation System"
+                  title="NavAIgator - AI Navigation System"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   className="w-full h-full"
@@ -35,7 +34,7 @@ const FeaturedProjectSection = () => {
                   <Navigation className="w-8 h-8 text-blue-400" />
                 </div>
               </div>
-              <h3 className="text-3xl font-bold mb-4 text-white">Navaique</h3>
+              <h3 className="text-3xl font-bold mb-4 text-white">NavAIgator</h3>
               <p className="text-lg text-gray-300 mb-6">
                 World's first Artificial Intelligence based navigation system that doesn't need satellite communication. Perfect for GPS-restricted areas, indoor facilities, underground operations, and dense forests.
               </p>
@@ -63,7 +62,6 @@ const FeaturedProjectSection = () => {
         </div>
       </div>
       
-      {/* Background elements */}
       <div className="absolute top-1/2 left-0 w-64 h-64 bg-blue-500/10 rounded-full filter blur-3xl"></div>
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/5 rounded-full filter blur-3xl"></div>
     </section>
