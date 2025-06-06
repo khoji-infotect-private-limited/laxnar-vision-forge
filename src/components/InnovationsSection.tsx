@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { FileText, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 const researchPapers = [
   {
@@ -9,9 +9,10 @@ const researchPapers = [
     journal: "NIPS 2017",
     category: "Transformer Architecture",
     description: "Foundational research that introduced the Transformer architecture, which we leverage as the core building block for our QuantumNLP language models and contextual understanding systems.",
-    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&h=800",
+    image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=1200&h=800",
     metrics: ["8,000+ citations", "Transformer backbone", "Self-attention mechanism"],
-    applicationInLaxnar: "Core architecture for our natural language processing models"
+    applicationInLaxnar: "Core architecture for our natural language processing models",
+    paperUrl: "https://arxiv.org/abs/1706.03762"
   },
   {
     title: "YOLO: Real-Time Object Detection",
@@ -19,9 +20,10 @@ const researchPapers = [
     journal: "CVPR 2016", 
     category: "Computer Vision",
     description: "Groundbreaking real-time object detection research that forms the foundation of our DeepVision Pro system, enabling unprecedented speed and accuracy in visual recognition tasks.",
-    image: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=1200&h=800",
+    image: "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?auto=format&fit=crop&w=1200&h=800",
     metrics: ["Real-time detection", "Single neural network", "End-to-end training"],
-    applicationInLaxnar: "Foundation for our real-time visual analysis systems"
+    applicationInLaxnar: "Foundation for our real-time visual analysis systems",
+    paperUrl: "https://arxiv.org/abs/1506.02640"
   },
   {
     title: "Federated Learning: Collaborative Machine Learning without Centralized Training Data",
@@ -29,13 +31,18 @@ const researchPapers = [
     journal: "AISTATS 2017",
     category: "Distributed Learning",
     description: "Pioneering research in federated learning that inspired our NexusCore platform, enabling secure collaborative AI training across distributed organizations while preserving data privacy.",
-    image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=1200&h=800",
+    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&h=800",
     metrics: ["Privacy-preserving", "Distributed training", "Edge computing"],
-    applicationInLaxnar: "Basis for our collaborative AI training infrastructure"
+    applicationInLaxnar: "Basis for our collaborative AI training infrastructure",
+    paperUrl: "https://arxiv.org/abs/1602.05629"
   }
 ];
 
 const InnovationsSection = () => {
+  const handleResearchClick = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <section id="innovations" className="py-16 md:py-24 relative circuit-bg">
       <div className="container mx-auto px-4">
@@ -67,7 +74,7 @@ const InnovationsSection = () => {
                   />
                   <div className="absolute top-4 left-4 z-20">
                     <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-400" />
+                      <ExternalLink className="w-4 h-4 text-blue-400" />
                       <span className="text-white text-sm font-medium">Research Paper</span>
                     </div>
                   </div>
@@ -114,17 +121,14 @@ const InnovationsSection = () => {
                   </p>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base">
-                    <FileText className="w-4 h-4 mr-2" />
-                    View Implementation
-                  </Button>
+                <div className="pt-2">
                   <Button 
+                    onClick={() => handleResearchClick(paper.paperUrl)}
                     variant="outline" 
                     className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white text-sm md:text-base"
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    Research Details
+                    Read Research Paper
                   </Button>
                 </div>
               </div>
