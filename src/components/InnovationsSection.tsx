@@ -9,7 +9,7 @@ const researchPapers = [
     journal: "NIPS 2017",
     category: "Transformer Architecture",
     description: "Foundational research that introduced the Transformer architecture, which we leverage as the core building block for our QuantumNLP language models and contextual understanding systems.",
-    image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=1200&h=800",
+    image: "/lovable-uploads/8457afc9-38f6-4e29-81bc-a0171275d920.png",
     metrics: ["8,000+ citations", "Transformer backbone", "Self-attention mechanism"],
     applicationInLaxnar: "Core architecture for our natural language processing models",
     paperUrl: "https://arxiv.org/abs/1706.03762"
@@ -20,7 +20,7 @@ const researchPapers = [
     journal: "CVPR 2016", 
     category: "Computer Vision",
     description: "Groundbreaking real-time object detection research that forms the foundation of our DeepVision Pro system, enabling unprecedented speed and accuracy in visual recognition tasks.",
-    image: "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?auto=format&fit=crop&w=1200&h=800",
+    image: "/lovable-uploads/3a50cf79-f1ee-4eb1-a682-7cea990de5c8.png",
     metrics: ["Real-time detection", "Single neural network", "End-to-end training"],
     applicationInLaxnar: "Foundation for our real-time visual analysis systems",
     paperUrl: "https://arxiv.org/abs/1506.02640"
@@ -41,6 +41,13 @@ const researchPapers = [
 const InnovationsSection = () => {
   const handleResearchClick = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handlePartnerClick = () => {
+    const contactSection = document.getElementById('contact');
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -145,7 +152,10 @@ const InnovationsSection = () => {
             <p className="text-gray-300 text-sm md:text-base mb-4 md:mb-6 max-w-2xl mx-auto">
               We actively collaborate with research institutions and contribute back to the AI community through open research initiatives.
             </p>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base">
+            <Button 
+              onClick={handlePartnerClick}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base"
+            >
               Partner with Our Research Team
             </Button>
           </div>
