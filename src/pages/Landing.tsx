@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, Globe, Smartphone, Brain, CheckCircle, Star, ArrowRight } from "lucide-react";
+import { MessageCircle, Globe, Smartphone, Brain, CheckCircle, Star, ArrowRight, Home } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Landing = () => {
   const [formData, setFormData] = useState({
@@ -38,8 +38,32 @@ Message: ${formData.message}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-laxnar-dark-blue via-blue-950 to-laxnar-dark-blue">
+      {/* Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-laxnar-dark-blue/80 backdrop-blur-lg">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-3">
+              <img 
+                src="/lovable-uploads/4f8610eb-6b18-41eb-b5f3-6dabcc4cd82a.png" 
+                alt="Laxnar AI Innovations" 
+                className="h-12 w-auto"
+              />
+            </Link>
+            <Link to="/">
+              <Button 
+                variant="outline" 
+                className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center gap-2"
+              >
+                <Home className="w-4 h-4" />
+                Back to Homepage
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <section className="relative py-20 px-4 overflow-hidden">
+      <section className="relative py-20 px-4 overflow-hidden mt-20">
         <div className="container mx-auto text-center">
           <div className="mb-8">
             <img 

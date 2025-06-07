@@ -69,6 +69,12 @@ const Navbar = () => {
               Solutions
             </button>
             <button 
+              onClick={() => scrollToSection('store')} 
+              className="text-white hover:text-blue-400 transition-colors"
+            >
+              Store
+            </button>
+            <button 
               onClick={() => scrollToSection('innovations')} 
               className="text-white hover:text-blue-400 transition-colors"
             >
@@ -124,6 +130,12 @@ const Navbar = () => {
                 className="text-white hover:text-blue-400 transition-colors py-2 text-left"
               >
                 Solutions
+              </button>
+              <button 
+                onClick={() => scrollToSection('store')} 
+                className="text-white hover:text-blue-400 transition-colors py-2 text-left"
+              >
+                Store
               </button>
               <button 
                 onClick={() => scrollToSection('innovations')} 
