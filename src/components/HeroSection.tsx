@@ -1,6 +1,6 @@
-
 import { useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -109,9 +109,11 @@ const HeroSection = () => {
               for government agencies and private enterprises, driving the next wave of technological advancement.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6">
-                Explore Solutions
-              </Button>
+              <Link to="/landing">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6">
+                  Explore Solutions
+                </Button>
+              </Link>
               <Button variant="outline" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-8 py-6">
                 Learn More
               </Button>
