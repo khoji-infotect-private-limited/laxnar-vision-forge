@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,13 @@ Message: ${formData.message}`;
     window.open('https://wa.me/919140982008', '_blank');
   };
 
+  const scrollToServices = () => {
+    const servicesSection = document.getElementById('services');
+    if (servicesSection) {
+      servicesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-laxnar-dark-blue via-blue-950 to-laxnar-dark-blue">
       {/* Navigation Bar */}
@@ -55,7 +63,7 @@ Message: ${formData.message}`;
                 className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center gap-2"
               >
                 <Home className="w-4 h-4" />
-                Back to Homepage
+                Homepage
               </Button>
             </Link>
           </div>
@@ -83,7 +91,7 @@ Message: ${formData.message}`;
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button 
-              onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={scrollToServices}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-lg"
             >
               View Our Services
@@ -160,6 +168,13 @@ Message: ${formData.message}`;
                   • Custom web applications<br/>
                   • Responsive design
                 </div>
+                <Button 
+                  onClick={openWhatsApp}
+                  className="bg-green-600 hover:bg-green-700 text-white w-full flex items-center justify-center gap-2 mt-4"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Discuss on WhatsApp
+                </Button>
               </CardContent>
             </Card>
 
@@ -193,6 +208,13 @@ Message: ${formData.message}`;
                   • Social media apps<br/>
                   • E-commerce apps
                 </div>
+                <Button 
+                  onClick={openWhatsApp}
+                  className="bg-green-600 hover:bg-green-700 text-white w-full flex items-center justify-center gap-2 mt-4"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Discuss on WhatsApp
+                </Button>
               </CardContent>
             </Card>
 
