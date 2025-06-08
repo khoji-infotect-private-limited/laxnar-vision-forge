@@ -194,11 +194,11 @@ Message: ${formData.message}`;
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Mid to Advanced</span>
-                    <span className="text-blue-400 font-semibold">₹30,000 - ₹80,000</span>
+                    <span className="text-blue-400 font-semibold">₹30,000 - ₹60,000</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Custom Complex</span>
-                    <span className="text-blue-400 font-semibold">₹80,000+</span>
+                    <span className="text-blue-400 font-semibold">₹60,000+</span>
                   </div>
                 </div>
                 <div className="text-sm text-gray-400 mt-4">
