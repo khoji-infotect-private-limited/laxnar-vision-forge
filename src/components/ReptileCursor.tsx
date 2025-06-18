@@ -29,7 +29,7 @@ const ReptileCursor = () => {
           background: #38b000;
           border: 2px solid rgba(255,255,255,.25);
           pointer-events: none;
-          z-index: -1;
+          z-index: 10;
         `;
         containerRef.current.appendChild(seg);
         segments.push(seg);
@@ -62,7 +62,7 @@ const ReptileCursor = () => {
     <div 
       ref={containerRef}
       className="fixed top-0 left-0 w-full h-full pointer-events-none"
-      style={{ zIndex: -1 }}
+      style={{ zIndex: 10 }}
     />
   );
 };
