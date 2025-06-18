@@ -9,6 +9,7 @@ import Projects from "./pages/Projects";
 import HerSafeZone from "./pages/HerSafeZone";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import ReptileCursor from "./components/ReptileCursor";
 
 const queryClient = new QueryClient();
 
@@ -17,6 +18,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <ReptileCursor />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
