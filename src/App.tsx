@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Projects from "./pages/Projects";
 import HerSafeZone from "./pages/HerSafeZone";
 import Landing from "./pages/Landing";
+import SubmitIdea from "./pages/SubmitIdea";
+import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
 import ReptileCursor from "./components/ReptileCursor";
 
@@ -25,6 +27,8 @@ const App = () => (
           <Route path="/projects" element={<Projects />} />
           <Route path="/hersafezone" element={<HerSafeZone />} />
           <Route path="/landing" element={<Landing />} />
+          <Route path="/submit-idea" element={<SubmitIdea />} />
+          <Route path="/thank-you" element={<ThankYou />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
