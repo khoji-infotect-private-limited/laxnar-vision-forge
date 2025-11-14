@@ -6,9 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Upload, Rocket, TrendingUp } from "lucide-react";
+import { useEffect } from "react";
 
 const SubmitIdea = () => {
   const { formData, isSubmitting, handleChange, handleFileChange, handleSubmit } = useSubmissionForm();
+
+  useEffect(() => {
+    // Track page view for submit-idea page
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('track', 'ViewContent', {
+        content_name: 'Submit Idea Form'
+      });
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
