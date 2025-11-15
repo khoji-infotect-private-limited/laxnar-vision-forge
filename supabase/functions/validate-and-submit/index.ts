@@ -218,9 +218,12 @@ serve(async (req) => {
   }
 
   // Inspect verificationData fields (adapt if Cashfree uses different keys)
-  const companyStatus = verificationData.company_status || verificationData.status || "";
+  const companyStatus = verificationData.cin_status || verificationData.company_status || verificationData.status || "";
   const companyType = verificationData.company_type || verificationData.type || verificationData.company_class || "";
   const verifiedCompanyName = verificationData.company_name || verificationData.name || "";
+  
+  // Extract company type from company name if not provided
+  const inferredCompanyType = verifiedCompanyName.toLowerCase().includes("private") ? "private" : companyType;
 
   console.info("Verification result summary", { companyStatus, companyType, verifiedCompanyName });
 
@@ -238,8 +241,8 @@ serve(async (req) => {
     );
   }
 
-  if (!companyType || !String(companyType).toLowerCase().includes("private")) {
-    console.warn("Company not private limited", { companyType });
+  if (!inferredCompanyType || !String(inferredCompanyType).toLowerCase().includes("private")) {
+    console.warn("Company not private limited", { companyType, inferredCompanyType });
     return new Response(
       JSON.stringify({
         ok: false,
