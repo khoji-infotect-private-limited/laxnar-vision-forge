@@ -302,7 +302,6 @@ serve(async (req) => {
       phone: phone || null,
       company_status: companyStatus,
       verified_company_name: verifiedCompanyName,
-      verification_raw: verificationData,
       created_at: new Date().toISOString(),
     };
 
