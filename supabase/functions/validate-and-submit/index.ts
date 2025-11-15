@@ -85,12 +85,13 @@ serve(async (req) => {
   const { companyName, cin, founderName, founderBackground, idea, revenueModel, usp, email, phone } = body || {};
 
   // Basic required fields check
-  if (!companyName || !cin || !founderName || !idea || !revenueModel || !usp || !email) {
+  if (!companyName || !cin || !founderName || !idea || !revenueModel || !usp || !email || !phone) {
     console.warn("Missing required fields", {
       companyNamePresent: !!companyName,
       cinPresent: !!cin,
       founderNamePresent: !!founderName,
       emailPresent: !!email,
+      phonePresent: !!phone,
     });
     return new Response(JSON.stringify({ ok: false, error: "Missing required fields" }), {
       status: 400,
@@ -299,9 +300,17 @@ serve(async (req) => {
       revenue_model: revenueModel,
       usp,
       email,
-      phone: phone || null,
+      phone: phone || "",
       company_status: companyStatus,
       verified_company_name: verifiedCompanyName,
+      verification_id: verificationData.verification_id || null,
+      reference_id: verificationData.reference_id?.toString() || null,
+      registration_number: verificationData.registration_number || null,
+      incorporation_date: verificationData.incorporation_date || null,
+      cin_status: verificationData.cin_status || null,
+      verified_email: verificationData.email || null,
+      incorporation_country: verificationData.incorporation_country || null,
+      director_details: verificationData.director_details || null,
       created_at: new Date().toISOString(),
     };
 
