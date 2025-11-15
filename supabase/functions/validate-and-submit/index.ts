@@ -43,9 +43,10 @@ function pemToArrayBuffer(pem: string) {
 }
 
 // RSA-OAEP encrypt and base64 encode (returns base64 signature)
+// NOTE: Cashfree uses RSA-OAEP with SHA-1 (OpenSSL default), not SHA-256
 async function rsaEncryptBase64Oaep(pemPublicKey: string, message: string) {
   const der = pemToArrayBuffer(pemPublicKey);
-  const cryptoKey = await crypto.subtle.importKey("spki", der, { name: "RSA-OAEP", hash: "SHA-256" }, false, [
+  const cryptoKey = await crypto.subtle.importKey("spki", der, { name: "RSA-OAEP", hash: "SHA-1" }, false, [
     "encrypt",
   ]);
   const encoded = new TextEncoder().encode(message);
