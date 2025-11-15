@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
+import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,6 +33,17 @@ serve(async (req) => {
       );
     }
 
+    // Generate timestamp and signature for Public Key authentication
+    const timestamp = Date.now().toString();
+    const requestBody = JSON.stringify({
+      cin: normalizedCin,
+    });
+    
+    // Generate HMAC-SHA256 signature
+    const signature = createHmac("sha256", clientSecret)
+      .update(timestamp + requestBody)
+      .digest("base64");
+
     // Call Cashfree CIN Verification API
     const cashfreeResponse = await fetch('https://api.cashfree.com/verification/cin', {
       method: 'POST',
@@ -39,10 +51,10 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'x-client-id': clientId,
         'x-client-secret': clientSecret,
+        'x-cf-signature': signature,
+        'x-cf-timestamp': timestamp,
       },
-      body: JSON.stringify({
-        cin: normalizedCin,
-      }),
+      body: requestBody,
     });
 
     const verificationData = await cashfreeResponse.json();
