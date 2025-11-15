@@ -1,10 +1,12 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Home, Mail } from "lucide-react";
 
 const ThankYou = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const verifiedCompanyName = location.state?.verifiedCompanyName;
 
   useEffect(() => {
     // Confetti effect could be added here
@@ -32,10 +34,15 @@ const ThankYou = () => {
         {/* Main Message */}
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <h1 className="text-4xl md:text-6xl font-bold">
-            Thank You! 🎉
+            Application Received
           </h1>
+          {verifiedCompanyName && (
+            <p className="text-lg md:text-xl text-primary font-medium">
+              {verifiedCompanyName} — Verified ✓
+            </p>
+          )}
           <p className="text-xl md:text-2xl text-muted-foreground">
-            Your idea has been successfully submitted
+            Your company is verified. We'll review your idea and contact you within 48 hours.
           </p>
         </div>
 

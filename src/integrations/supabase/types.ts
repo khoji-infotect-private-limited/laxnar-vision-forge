@@ -16,34 +16,49 @@ export type Database = {
     Tables: {
       submissions: {
         Row: {
+          cin: string
+          company_name: string
+          company_status: string | null
           created_at: string
           email: string
+          founder_background: string
+          founder_name: string
           id: string
-          idea_description: string
-          name: string
-          pitch_deck_url: string | null
-          traction: string | null
-          whatsapp_number: string
+          idea: string
+          phone: string | null
+          revenue_model: string
+          usp: string
+          verified_company_name: string | null
         }
         Insert: {
+          cin?: string
+          company_name?: string
+          company_status?: string | null
           created_at?: string
           email: string
+          founder_background?: string
+          founder_name?: string
           id?: string
-          idea_description: string
-          name: string
-          pitch_deck_url?: string | null
-          traction?: string | null
-          whatsapp_number: string
+          idea: string
+          phone?: string | null
+          revenue_model?: string
+          usp?: string
+          verified_company_name?: string | null
         }
         Update: {
+          cin?: string
+          company_name?: string
+          company_status?: string | null
           created_at?: string
           email?: string
+          founder_background?: string
+          founder_name?: string
           id?: string
-          idea_description?: string
-          name?: string
-          pitch_deck_url?: string | null
-          traction?: string | null
-          whatsapp_number?: string
+          idea?: string
+          phone?: string | null
+          revenue_model?: string
+          usp?: string
+          verified_company_name?: string | null
         }
         Relationships: []
       }
