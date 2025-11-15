@@ -17,48 +17,72 @@ export type Database = {
       submissions: {
         Row: {
           cin: string
+          cin_status: string | null
           company_name: string
           company_status: string | null
           created_at: string
+          director_details: Json | null
           email: string
           founder_background: string
           founder_name: string
           id: string
           idea: string
-          phone: string | null
+          incorporation_country: string | null
+          incorporation_date: string | null
+          phone: string
+          reference_id: string | null
+          registration_number: string | null
           revenue_model: string
           usp: string
+          verification_id: string | null
           verified_company_name: string | null
+          verified_email: string | null
         }
         Insert: {
           cin?: string
+          cin_status?: string | null
           company_name?: string
           company_status?: string | null
           created_at?: string
+          director_details?: Json | null
           email: string
           founder_background?: string
           founder_name?: string
           id?: string
           idea: string
-          phone?: string | null
+          incorporation_country?: string | null
+          incorporation_date?: string | null
+          phone?: string
+          reference_id?: string | null
+          registration_number?: string | null
           revenue_model?: string
           usp?: string
+          verification_id?: string | null
           verified_company_name?: string | null
+          verified_email?: string | null
         }
         Update: {
           cin?: string
+          cin_status?: string | null
           company_name?: string
           company_status?: string | null
           created_at?: string
+          director_details?: Json | null
           email?: string
           founder_background?: string
           founder_name?: string
           id?: string
           idea?: string
-          phone?: string | null
+          incorporation_country?: string | null
+          incorporation_date?: string | null
+          phone?: string
+          reference_id?: string | null
+          registration_number?: string | null
           revenue_model?: string
           usp?: string
+          verification_id?: string | null
           verified_company_name?: string | null
+          verified_email?: string | null
         }
         Relationships: []
       }
