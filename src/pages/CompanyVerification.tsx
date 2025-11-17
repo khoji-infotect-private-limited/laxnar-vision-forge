@@ -97,15 +97,6 @@ const CompanyVerification = () => {
       if (error) throw error;
 
       if (data?.ok && data?.accepted) {
-        // Track Facebook Lead event
-        if (typeof window !== 'undefined' && (window as any).fbq) {
-          (window as any).fbq('track', 'Lead', {
-            content_name: 'CIN Validated Application',
-            value: 1.00,
-            currency: 'USD',
-          });
-        }
-
         // Clear stored data
         localStorage.removeItem("laxnar_step1_data");
 
