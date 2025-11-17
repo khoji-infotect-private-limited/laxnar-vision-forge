@@ -114,89 +114,62 @@ export const useCINSubmissionForm = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleContinue = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Prevent duplicate submissions within 30 seconds
-    const now = Date.now();
-    if (now - lastSubmitTime < 30000) {
-      toast({
-        title: "Please wait",
-        description: "You can only submit once every 30 seconds",
-        variant: "destructive",
-      });
-      return;
+    const newErrors: FormErrors = {};
+
+    if (!formData.founderName.trim()) {
+      newErrors.founderName = "Founder name is required";
     }
 
-    if (!validateForm()) {
-      return;
+    if (!formData.founderBackground.trim()) {
+      newErrors.founderBackground = "Founder background is required";
     }
 
-    setIsSubmitting(true);
-    setLastSubmitTime(now);
+    if (!formData.idea.trim()) {
+      newErrors.idea = "Business idea is required";
+    }
 
-    try {
-      const { data, error } = await supabase.functions.invoke('validate-and-submit', {
-        body: {
-          companyName: formData.companyName.trim(),
-          cin: formData.cin.trim().toUpperCase(),
-          founderName: formData.founderName.trim(),
-          founderBackground: formData.founderBackground.trim(),
-          idea: formData.idea.trim(),
-          revenueModel: formData.revenueModel.trim(),
-          usp: formData.usp.trim(),
-          email: formData.email.trim(),
-          phone: formData.phone.trim() || undefined,
-        },
-      });
+    if (!formData.revenueModel.trim()) {
+      newErrors.revenueModel = "Revenue model is required";
+    }
 
-      if (error) {
-        throw new Error(error.message);
-      }
+    if (!formData.usp.trim()) {
+      newErrors.usp = "USP is required";
+    }
 
-      if (!data.ok) {
-        // Handle validation errors
-        if (data.error) {
-          setErrors({ submit: data.error });
-          toast({
-            title: "Validation Failed",
-            description: data.error,
-            variant: "destructive",
-            duration: 7000,
-          });
-        }
-        setIsSubmitting(false);
-        return;
-      }
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!EMAIL_REGEX.test(formData.email.trim())) {
+      newErrors.email = "Invalid email address";
+    }
 
-      // Success - track with Facebook Pixel
-      if (typeof window !== 'undefined' && (window as any).fbq) {
-        (window as any).fbq('track', 'Lead', {
-          lead_type: 'validated_cin',
-          company_name: data.verifiedCompanyName,
-        });
-      }
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (formData.phone.replace(/\D/g, '').length !== 10) {
+      newErrors.phone = "Phone number must be exactly 10 digits";
+    }
 
-      // Track with GA
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'submit_idea_validated_cin', {
-          company_name: data.verifiedCompanyName,
-        });
-      }
+    if (!formData.consent) {
+      newErrors.consent = "You must consent to continue";
+    }
 
-      // Navigate to thank you page with company name
-      navigate('/thank-you', { state: { verifiedCompanyName: data.verifiedCompanyName } });
+    setErrors(newErrors);
 
-    } catch (err: any) {
-      console.error("Submission error:", err);
-      setErrors({ submit: "Network error — please try again." });
-      toast({
-        title: "Submission failed",
-        description: err.message || "Network error — please try again.",
-        variant: "destructive",
-        duration: 5000,
-      });
-      setIsSubmitting(false);
+    if (Object.keys(newErrors).length === 0) {
+      // Save step 1 data to localStorage
+      localStorage.setItem("laxnar_step1_data", JSON.stringify({
+        founderName: formData.founderName.trim(),
+        founderBackground: formData.founderBackground.trim(),
+        idea: formData.idea.trim(),
+        revenueModel: formData.revenueModel.trim(),
+        usp: formData.usp.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.replace(/\D/g, ''),
+      }));
+
+      navigate("/company-verification");
     }
   };
 
@@ -205,6 +178,6 @@ export const useCINSubmissionForm = () => {
     errors,
     isSubmitting,
     handleChange,
-    handleSubmit,
+    handleContinue,
   };
 };

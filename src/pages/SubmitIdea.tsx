@@ -5,22 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, InfoIcon } from "lucide-react";
 import { useCINSubmissionForm } from "@/hooks/useCINSubmissionForm";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 const SubmitIdea = () => {
-  const { formData, errors, isSubmitting, handleChange, handleSubmit } = useCINSubmissionForm();
+  const { formData, errors, isSubmitting, handleChange, handleContinue } = useCINSubmissionForm();
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).fbq) {
       (window as any).fbq('track', 'ViewContent', {
-        content_name: 'Submit Idea Form',
+        content_name: 'Submit Idea Form - Step 1',
       });
     }
   }, []);
@@ -47,57 +40,7 @@ const SubmitIdea = () => {
         {/* Form Section */}
         <section className="pb-20 px-4">
           <div className="max-w-xl mx-auto">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Company Name */}
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name *</Label>
-                <Input
-                  id="companyName"
-                  name="companyName"
-                  type="text"
-                  placeholder="Acme Labs Pvt Ltd"
-                  value={formData.companyName}
-                  onChange={handleChange}
-                  className={errors.companyName ? "border-destructive" : ""}
-                />
-                {errors.companyName && (
-                  <p className="text-sm text-destructive">{errors.companyName}</p>
-                )}
-              </div>
-
-              {/* CIN Number */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="cin">Company CIN Number *</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs">We only accept Active Private Limited companies. CIN will be verified.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <Input
-                  id="cin"
-                  name="cin"
-                  type="text"
-                  placeholder="Enter 21-character CIN (e.g. U74999KA2020PTC012345)"
-                  value={formData.cin}
-                  onChange={handleChange}
-                  maxLength={21}
-                  className={errors.cin ? "border-destructive" : ""}
-                />
-                <p className="text-xs text-muted-foreground">
-                  CIN required — will be validated before submission.
-                </p>
-                {errors.cin && (
-                  <p className="text-sm text-destructive">{errors.cin}</p>
-                )}
-              </div>
-
+            <form onSubmit={handleContinue} className="space-y-6">
               {/* Founder Name */}
               <div className="space-y-2">
                 <Label htmlFor="founderName">Founder's Full Name *</Label>
@@ -251,16 +194,9 @@ const SubmitIdea = () => {
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={isSubmitting || !formData.consent}
+                disabled={!formData.consent}
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying company — please wait...
-                  </>
-                ) : (
-                  "Submit Application"
-                )}
+                Continue to Step 2
               </Button>
             </form>
 
