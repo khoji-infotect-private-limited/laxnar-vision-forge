@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2, InfoIcon } from "lucide-react";
 import { useCINSubmissionForm } from "@/hooks/useCINSubmissionForm";
@@ -117,14 +118,14 @@ const SubmitIdea = () => {
               {/* Founder Background */}
               <div className="space-y-2">
                 <Label htmlFor="founderBackground">Founder's Background *</Label>
-                <Input
+                <Textarea
                   id="founderBackground"
                   name="founderBackground"
-                  type="text"
                   placeholder="ex: Product manager, 7 yrs fintech"
                   value={formData.founderBackground}
                   onChange={handleChange}
                   className={errors.founderBackground ? "border-destructive" : ""}
+                  rows={3}
                 />
                 {errors.founderBackground && (
                   <p className="text-sm text-destructive">{errors.founderBackground}</p>
@@ -168,14 +169,14 @@ const SubmitIdea = () => {
               {/* USP */}
               <div className="space-y-2">
                 <Label htmlFor="usp">USP (Unique Selling Point) *</Label>
-                <Input
+                <Textarea
                   id="usp"
                   name="usp"
-                  type="text"
                   placeholder="ex: Automates GST filings"
                   value={formData.usp}
                   onChange={handleChange}
                   className={errors.usp ? "border-destructive" : ""}
+                  rows={3}
                 />
                 {errors.usp && (
                   <p className="text-sm text-destructive">{errors.usp}</p>
