@@ -22,7 +22,8 @@ const CompanyVerification = () => {
   const { toast } = useToast();
   const [companyName, setCompanyName] = useState("");
   const [cin, setCin] = useState("");
-  const [errors, setErrors] = useState<{ companyName?: string; cin?: string }>({});
+  const [consent, setConsent] = useState(false);
+  const [errors, setErrors] = useState<{ companyName?: string; cin?: string; consent?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ const CompanyVerification = () => {
   }, [navigate, toast]);
 
   const validateForm = (): boolean => {
-    const newErrors: { companyName?: string; cin?: string } = {};
+    const newErrors: { companyName?: string; cin?: string; consent?: string } = {};
 
     if (!companyName.trim()) {
       newErrors.companyName = "Company name is required";
@@ -55,6 +56,10 @@ const CompanyVerification = () => {
       newErrors.cin = "CIN is required";
     } else if (!CIN_REGEX.test(cin.trim())) {
       newErrors.cin = "Invalid CIN format — please check.";
+    }
+
+    if (!consent) {
+      newErrors.consent = "You must consent to continue";
     }
 
     setErrors(newErrors);
@@ -209,10 +214,33 @@ const CompanyVerification = () => {
                 )}
               </div>
 
+              {/* Consent Checkbox */}
+              <div className="flex items-start gap-3">
+                <input
+                  id="consent"
+                  name="consent"
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(e) => {
+                    setConsent(e.target.checked);
+                    if (errors.consent) {
+                      setErrors((prev) => ({ ...prev, consent: undefined }));
+                    }
+                  }}
+                  className="mt-1 h-4 w-4 rounded border-border"
+                />
+                <Label htmlFor="consent" className="text-sm font-normal cursor-pointer">
+                  I consent to Laxnar verifying my company details and contacting me. *
+                </Label>
+              </div>
+              {errors.consent && (
+                <p className="text-sm text-destructive">{errors.consent}</p>
+              )}
+
               {/* Submit Button */}
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !consent}
                 className="w-full"
                 size="lg"
               >

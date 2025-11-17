@@ -162,24 +162,6 @@ const SubmitIdea = () => {
                 )}
               </div>
 
-              {/* Consent Checkbox */}
-              <div className="flex items-start gap-3">
-                <input
-                  id="consent"
-                  name="consent"
-                  type="checkbox"
-                  checked={formData.consent}
-                  onChange={handleChange}
-                  className="mt-1 h-4 w-4 rounded border-border"
-                />
-                <Label htmlFor="consent" className="text-sm font-normal cursor-pointer">
-                  I consent to Laxnar verifying my company details and contacting me. *
-                </Label>
-              </div>
-              {errors.consent && (
-                <p className="text-sm text-destructive">{errors.consent}</p>
-              )}
-
               {/* Submit Error */}
               {errors.submit && (
                 <div className="p-4 bg-destructive/10 border border-destructive rounded-md">
@@ -192,7 +174,6 @@ const SubmitIdea = () => {
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={!formData.consent}
               >
                 Continue to Step 2
               </Button>
