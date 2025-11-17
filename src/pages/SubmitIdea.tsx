@@ -12,9 +12,7 @@ const SubmitIdea = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).fbq) {
-      (window as any).fbq('track', 'ViewContent', {
-        content_name: 'Submit Idea Form - Step 1',
-      });
+      (window as any).fbq('track', 'PageView');
     }
   }, []);
 
