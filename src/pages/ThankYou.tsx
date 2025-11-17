@@ -12,11 +12,9 @@ const ThankYou = () => {
     // Confetti effect could be added here
     window.scrollTo(0, 0);
     
-    // Track successful submission
+    // Track CompleteRegistration event
     if (typeof window !== 'undefined' && (window as any).fbq) {
-      (window as any).fbq('track', 'Lead', {
-        content_name: 'Idea Submission Success'
-      });
+      (window as any).fbq('track', 'CompleteRegistration');
     }
   }, []);
 

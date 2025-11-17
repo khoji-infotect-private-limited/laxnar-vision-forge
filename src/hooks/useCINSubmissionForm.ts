@@ -158,6 +158,11 @@ export const useCINSubmissionForm = () => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
+      // Track custom lead_step_1 event
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        (window as any).fbq('trackCustom', 'lead_step_1');
+      }
+
       // Save step 1 data to localStorage
       localStorage.setItem("laxnar_step1_data", JSON.stringify({
         founderName: formData.founderName.trim(),
