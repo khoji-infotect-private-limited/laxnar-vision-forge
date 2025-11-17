@@ -84,8 +84,8 @@ serve(async (req) => {
 
   const { companyName, cin, founderName, founderBackground, idea, revenueModel, usp, email, phone } = body || {};
 
-  // Basic required fields check
-  if (!companyName || !cin || !founderName || !idea || !revenueModel || !usp || !email || !phone) {
+  // Basic required fields check (CIN is now optional)
+  if (!companyName || !founderName || !idea || !revenueModel || !usp || !email || !phone) {
     console.warn("Missing required fields", {
       companyNamePresent: !!companyName,
       cinPresent: !!cin,
@@ -99,9 +99,9 @@ serve(async (req) => {
     });
   }
 
-  // normalize and validate CIN format (basic)
-  const cinNormalized = String(cin).toUpperCase().trim();
-  if (!/^[A-Z0-9]{21}$/.test(cinNormalized)) {
+  // CIN is optional - if provided, normalize and validate format
+  const cinNormalized = cin ? String(cin).toUpperCase().trim() : "";
+  if (cinNormalized && !/^[A-Z0-9]{21}$/.test(cinNormalized)) {
     console.warn("Invalid CIN format", { cin });
     return new Response(JSON.stringify({ ok: false, error: "Invalid CIN format" }), {
       status: 400,
@@ -109,171 +109,180 @@ serve(async (req) => {
     });
   }
 
-  // Load env
-  const clientId = Deno.env.get("CASHFREE_CLIENT_ID");
-  const clientSecret = Deno.env.get("CASHFREE_CLIENT_SECRET");
-  const pemPublic = Deno.env.get("CASHFREE_PUBLIC_KEY_PEM") || "";
-  const useSignatureEnv = (Deno.env.get("CASHFREE_USE_SIGNATURE") ?? "true").toLowerCase();
-  const useSignature = useSignatureEnv === "true" || useSignatureEnv === "1";
+  // Initialize verification variables
+  let verificationData: any = null;
+  let companyStatus = "";
+  let verifiedCompanyName = "";
 
-  if (!clientId || !clientSecret) {
-    console.error("Missing Cashfree clientId/secret in environment");
-    return new Response(JSON.stringify({ ok: false, error: "Server configuration error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  // Only perform CIN verification if CIN is provided
+  if (cinNormalized) {
+    // Load env
+    const clientId = Deno.env.get("CASHFREE_CLIENT_ID");
+    const clientSecret = Deno.env.get("CASHFREE_CLIENT_SECRET");
+    const pemPublic = Deno.env.get("CASHFREE_PUBLIC_KEY_PEM") || "";
+    const useSignatureEnv = (Deno.env.get("CASHFREE_USE_SIGNATURE") ?? "true").toLowerCase();
+    const useSignature = useSignatureEnv === "true" || useSignatureEnv === "1";
 
-  // Build Cashfree request
-  const cashfreeUrl = "https://api.cashfree.com/verification/cin";
-  const verificationId = `LAXNAR-${Date.now()}`;
+    if (!clientId || !clientSecret) {
+      console.error("Missing Cashfree clientId/secret in environment");
+      return new Response(JSON.stringify({ ok: false, error: "Server configuration error" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-  // Prepare headers
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "x-client-id": clientId,
-    "x-client-secret": clientSecret,
-  };
+    // Build Cashfree request
+    const cashfreeUrl = "https://api.cashfree.com/verification/cin";
+    const verificationId = `LAXNAR-${Date.now()}`;
 
-  let debugSignatureInfo: { dataToSign?: string; timestamp?: string; signature?: string } = {};
+    // Prepare headers
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "x-client-id": clientId,
+      "x-client-secret": clientSecret,
+    };
 
-  try {
-    if (useSignature) {
-      if (!pemPublic) {
-        console.error("CASHFREE_USE_SIGNATURE true but CASHFREE_PUBLIC_KEY_PEM missing");
-        return new Response(JSON.stringify({ ok: false, error: "Server configuration error (public key missing)" }), {
-          status: 500,
+    let debugSignatureInfo: { dataToSign?: string; timestamp?: string; signature?: string } = {};
+
+    try {
+      if (useSignature) {
+        if (!pemPublic) {
+          console.error("CASHFREE_USE_SIGNATURE true but CASHFREE_PUBLIC_KEY_PEM missing");
+          return new Response(JSON.stringify({ ok: false, error: "Server configuration error (public key missing)" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // IMPORTANT: timestamp in seconds
+        const timestamp = Math.floor(Date.now() / 1000).toString();
+        const dataToSign = `${clientId}.${timestamp}`;
+
+        // Generate signature using RSA-OAEP (SHA-256)
+        const signature = await rsaEncryptBase64Oaep(pemPublic, dataToSign);
+
+        // Attach signature headers
+        headers["x-cf-timestamp"] = timestamp;
+        headers["x-cf-signature"] = signature;
+
+        // Save debug info (do NOT log secrets like clientSecret)
+        debugSignatureInfo = { dataToSign, timestamp, signature };
+        console.info("Generated Cashfree signature", { dataToSign, timestamp, signature });
+      } else {
+        console.info("CASHFREE_USE_SIGNATURE is false — calling Cashfree without x-cf-signature (IP-whitelist mode).");
+      }
+    } catch (err) {
+      console.error("Error generating Cashfree signature:", err);
+      return new Response(JSON.stringify({ ok: false, error: "Failed to generate Cashfree signature" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Call Cashfree
+    try {
+      const payload = { verification_id: `LAXNAR-${Date.now()}`, cin: cinNormalized };
+      console.info("Calling Cashfree verification API", { url: cashfreeUrl, cin: cinNormalized });
+
+      const cfResp = await fetch(cashfreeUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      const respText = await cfResp.text();
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(respText);
+      } catch (e) {
+        console.error("Cashfree response not JSON", { status: cfResp.status, textSnippet: respText.slice(0, 200) });
+        return new Response(JSON.stringify({ ok: false, error: "Verification service error (non-JSON response)" }), {
+          status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // IMPORTANT: timestamp in seconds
-      const timestamp = Math.floor(Date.now() / 1000).toString();
-      const dataToSign = `${clientId}.${timestamp}`;
+      console.info("Cashfree HTTP status", cfResp.status);
+      console.debug("Cashfree response body", parsed);
 
-      // Generate signature using RSA-OAEP (SHA-256)
-      const signature = await rsaEncryptBase64Oaep(pemPublic, dataToSign);
+      if (!cfResp.ok) {
+        // Helpful debug info to copy to Cashfree support (do NOT include clientSecret)
+        console.error("Cashfree API error (non-OK)", { status: cfResp.status, body: parsed, debugSignatureInfo });
+        const providerMessage = parsed?.message || parsed?.error || JSON.stringify(parsed);
+        return new Response(JSON.stringify({ ok: false, accepted: false, error: providerMessage }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-      // Attach signature headers
-      headers["x-cf-timestamp"] = timestamp;
-      headers["x-cf-signature"] = signature;
-
-      // Save debug info (do NOT log secrets like clientSecret)
-      debugSignatureInfo = { dataToSign, timestamp, signature };
-      console.info("Generated Cashfree signature", { dataToSign, timestamp, signature });
-    } else {
-      console.info("CASHFREE_USE_SIGNATURE is false — calling Cashfree without x-cf-signature (IP-whitelist mode).");
-    }
-  } catch (err) {
-    console.error("Error generating Cashfree signature:", err);
-    return new Response(JSON.stringify({ ok: false, error: "Failed to generate Cashfree signature" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // Call Cashfree
-  let verificationData: any = null;
-  try {
-    const payload = { verification_id: verificationId, cin: cinNormalized };
-    console.info("Calling Cashfree verification API", { url: cashfreeUrl, verificationId, cin: cinNormalized });
-
-    const cfResp = await fetch(cashfreeUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-    });
-
-    const respText = await cfResp.text();
-    let parsed: any = null;
-    try {
-      parsed = JSON.parse(respText);
-    } catch (e) {
-      console.error("Cashfree response not JSON", { status: cfResp.status, textSnippet: respText.slice(0, 200) });
-      return new Response(JSON.stringify({ ok: false, error: "Verification service error (non-JSON response)" }), {
+      verificationData = parsed;
+    } catch (err) {
+      console.error("Error calling Cashfree API:", err);
+      return new Response(JSON.stringify({ ok: false, error: "Verification service unavailable. Please try later." }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.info("Cashfree HTTP status", cfResp.status);
-    console.debug("Cashfree response body", parsed);
+    // Inspect verificationData fields (adapt if Cashfree uses different keys)
+    companyStatus = verificationData.cin_status || verificationData.company_status || verificationData.status || "";
+    const companyType = verificationData.company_type || verificationData.type || verificationData.company_class || "";
+    verifiedCompanyName = verificationData.company_name || verificationData.name || "";
+    
+    // Extract company type from company name if not provided
+    const inferredCompanyType = verifiedCompanyName.toLowerCase().includes("private") ? "private" : companyType;
 
-    if (!cfResp.ok) {
-      // Helpful debug info to copy to Cashfree support (do NOT include clientSecret)
-      console.error("Cashfree API error (non-OK)", { status: cfResp.status, body: parsed, debugSignatureInfo });
-      const providerMessage = parsed?.message || parsed?.error || JSON.stringify(parsed);
-      return new Response(JSON.stringify({ ok: false, accepted: false, error: providerMessage }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    console.info("Verification result summary", { companyStatus, companyType, verifiedCompanyName });
 
-    verificationData = parsed;
-  } catch (err) {
-    console.error("Error calling Cashfree API:", err);
-    return new Response(JSON.stringify({ ok: false, error: "Verification service unavailable. Please try later." }), {
-      status: 502,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // Inspect verificationData fields (adapt if Cashfree uses different keys)
-  const companyStatus = verificationData.cin_status || verificationData.company_status || verificationData.status || "";
-  const companyType = verificationData.company_type || verificationData.type || verificationData.company_class || "";
-  const verifiedCompanyName = verificationData.company_name || verificationData.name || "";
-  
-  // Extract company type from company name if not provided
-  const inferredCompanyType = verifiedCompanyName.toLowerCase().includes("private") ? "private" : companyType;
-
-  console.info("Verification result summary", { companyStatus, companyType, verifiedCompanyName });
-
-  // Validate status & type
-  if (!companyStatus || String(companyStatus).toLowerCase() !== "active") {
-    console.warn("Company not active", { companyStatus });
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        accepted: false,
-        error:
-          "We only accept Active Private Limited companies. If you think this is an error, contact hello@laxnar.ai.",
-      }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-
-  if (!inferredCompanyType || !String(inferredCompanyType).toLowerCase().includes("private")) {
-    console.warn("Company not private limited", { companyType, inferredCompanyType });
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        accepted: false,
-        error:
-          "We only accept Active Private Limited companies. If you think this is an error, contact hello@laxnar.ai.",
-      }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-
-  // Basic name fuzzy match
-  const submittedNorm = normalizeName(companyName);
-  const verifiedNorm = normalizeName(verifiedCompanyName);
-  if (submittedNorm && verifiedNorm) {
-    const minLen = Math.min(8, Math.max(4, Math.floor(verifiedNorm.length / 2)));
-    const match =
-      submittedNorm.includes(verifiedNorm.substring(0, minLen)) ||
-      verifiedNorm.includes(submittedNorm.substring(0, minLen));
-    if (!match) {
-      console.warn("Name mismatch", { submittedNorm, verifiedNorm });
+    // Validate status & type
+    if (!companyStatus || String(companyStatus).toLowerCase() !== "active") {
+      console.warn("Company not active", { companyStatus });
       return new Response(
         JSON.stringify({
           ok: false,
           accepted: false,
-          error: "Company name does not match CIN record — please confirm.",
+          error:
+            "We only accept Active Private Limited companies. If you think this is an error, contact hello@laxnar.ai.",
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    if (!inferredCompanyType || !String(inferredCompanyType).toLowerCase().includes("private")) {
+      console.warn("Company not private limited", { companyType, inferredCompanyType });
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          accepted: false,
+          error:
+            "We only accept Active Private Limited companies. If you think this is an error, contact hello@laxnar.ai.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Basic name fuzzy match
+    const submittedNorm = normalizeName(companyName);
+    const verifiedNorm = normalizeName(verifiedCompanyName);
+    if (submittedNorm && verifiedNorm) {
+      const minLen = Math.min(8, Math.max(4, Math.floor(verifiedNorm.length / 2)));
+      const match =
+        submittedNorm.includes(verifiedNorm.substring(0, minLen)) ||
+        verifiedNorm.includes(submittedNorm.substring(0, minLen));
+      if (!match) {
+        console.warn("Name mismatch", { submittedNorm, verifiedNorm });
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            accepted: false,
+            error: "Company name does not match CIN record — please confirm.",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+  } else {
+    console.info("No CIN provided - skipping Cashfree verification");
   }
 
   // Persist to Supabase
@@ -357,8 +366,8 @@ serve(async (req) => {
               ...(hashedPhone ? { ph: hashedPhone } : {}),
             },
             custom_data: {
-              lead_type: "validated_cin",
-              company_name: verifiedCompanyName,
+              lead_type: cinNormalized ? "validated_cin" : "no_cin_provided",
+              company_name: verifiedCompanyName || companyName,
             },
           },
         ],

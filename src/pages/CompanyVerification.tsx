@@ -52,9 +52,8 @@ const CompanyVerification = () => {
       newErrors.companyName = "Company name is required";
     }
 
-    if (!cin.trim()) {
-      newErrors.cin = "CIN is required";
-    } else if (!CIN_REGEX.test(cin.trim())) {
+    // CIN is optional, but if provided, validate format
+    if (cin.trim() && !CIN_REGEX.test(cin.trim())) {
       newErrors.cin = "Invalid CIN format — please check.";
     }
 
@@ -179,14 +178,14 @@ const CompanyVerification = () => {
               {/* CIN Number */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="cin">Company CIN Number *</Label>
+                  <Label htmlFor="cin">Company CIN Number (Optional)</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="max-w-xs">We only accept Active Private Limited companies. CIN will be verified.</p>
+                        <p className="max-w-xs">If provided, we will verify your Private Limited company status.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -207,7 +206,7 @@ const CompanyVerification = () => {
                   className={errors.cin ? "border-destructive" : ""}
                 />
                 <p className="text-xs text-muted-foreground">
-                  CIN required — will be validated before submission.
+                  Optional — if provided, will be validated before submission.
                 </p>
                 {errors.cin && (
                   <p className="text-sm text-destructive">{errors.cin}</p>
