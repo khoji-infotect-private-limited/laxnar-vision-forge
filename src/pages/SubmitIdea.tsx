@@ -207,11 +207,15 @@ const SubmitIdea = () => {
                   id="phone"
                   name="phone"
                   type="tel"
-                  placeholder="+91 98765 43210"
+                  placeholder="9876543210"
                   value={formData.phone}
                   onChange={handleChange}
+                  maxLength={10}
                   className={errors.phone ? "border-destructive" : ""}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Enter 10-digit mobile number without country code
+                </p>
                 {errors.phone && (
                   <p className="text-sm text-destructive">{errors.phone}</p>
                 )}
