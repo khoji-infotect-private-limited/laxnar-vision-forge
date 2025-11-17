@@ -151,10 +151,6 @@ export const useCINSubmissionForm = () => {
       newErrors.phone = "Phone number must be exactly 10 digits";
     }
 
-    if (!formData.consent) {
-      newErrors.consent = "You must consent to continue";
-    }
-
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
