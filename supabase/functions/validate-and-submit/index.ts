@@ -82,16 +82,33 @@ serve(async (req) => {
     });
   }
 
-  const { companyName, cin, founderName, founderBackground, idea, revenueModel, usp, email, phone } = body || {};
+  const { 
+    companyName, 
+    cin, 
+    founderName, 
+    founderBackground, 
+    idea, 
+    revenueModel, 
+    usp, 
+    email, 
+    phone,
+    verifyOnly = false,
+    stage,
+    timeline
+  } = body || {};
 
   // Basic required fields check
-  if (!companyName || !cin || !founderName || !idea || !revenueModel || !usp || !email || !phone) {
+  // For verifyOnly mode, we only need CIN, companyName, founderName, email, phone, and idea
+  const requiredFields = verifyOnly
+    ? { companyName, cin, founderName, email, phone, idea }
+    : { companyName, cin, founderName, founderBackground, idea, revenueModel, usp, email, phone };
+
+  const missingFields = Object.entries(requiredFields).filter(([_, value]) => !value);
+  
+  if (missingFields.length > 0) {
     console.warn("Missing required fields", {
-      companyNamePresent: !!companyName,
-      cinPresent: !!cin,
-      founderNamePresent: !!founderName,
-      emailPresent: !!email,
-      phonePresent: !!phone,
+      mode: verifyOnly ? "verifyOnly" : "full",
+      missing: missingFields.map(([key]) => key),
     });
     return new Response(JSON.stringify({ ok: false, error: "Missing required fields" }), {
       status: 400,
@@ -276,6 +293,26 @@ serve(async (req) => {
     }
   }
 
+  // If verifyOnly mode, return success without saving to database
+  if (verifyOnly) {
+    console.info("CIN verified successfully (verifyOnly mode)", {
+      cin: cinNormalized,
+      company: verifiedCompanyName,
+    });
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        success: true,
+        verifiedCompanyName,
+        message: "CIN verified successfully",
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+
   // Persist to Supabase
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -385,6 +422,7 @@ serve(async (req) => {
   return new Response(
     JSON.stringify({
       ok: true,
+      success: true,
       accepted: true,
       verifiedCompanyName,
       debugSignatureInfo: debugSignatureInfo, // useful to copy/paste to Cashfree support for debugging
