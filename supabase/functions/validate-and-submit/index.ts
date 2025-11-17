@@ -113,6 +113,7 @@ serve(async (req) => {
   let verificationData: any = null;
   let companyStatus = "";
   let verifiedCompanyName = "";
+  let debugSignatureInfo: { dataToSign?: string; timestamp?: string; signature?: string } = {};
 
   // Only perform CIN verification if CIN is provided
   if (cinNormalized) {
@@ -141,8 +142,6 @@ serve(async (req) => {
       "x-client-id": clientId,
       "x-client-secret": clientSecret,
     };
-
-    let debugSignatureInfo: { dataToSign?: string; timestamp?: string; signature?: string } = {};
 
     try {
       if (useSignature) {
