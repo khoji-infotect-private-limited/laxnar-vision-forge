@@ -102,8 +102,8 @@ export const useCINSubmissionForm = () => {
 
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone number is required";
-    } else if (formData.phone.trim().length < 10) {
-      newErrors.phone = "Phone number must be at least 10 digits";
+    } else if (formData.phone.replace(/\D/g, '').length !== 10) {
+      newErrors.phone = "Phone number must be exactly 10 digits";
     }
 
     if (!formData.consent) {
