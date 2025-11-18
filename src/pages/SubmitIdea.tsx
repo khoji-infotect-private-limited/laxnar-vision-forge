@@ -39,6 +39,23 @@ const SubmitIdea = () => {
         <section className="pb-20 px-4">
           <div className="max-w-xl mx-auto">
             <form onSubmit={handleContinue} className="space-y-6">
+              {/* Company Name */}
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Company Name *</Label>
+                <Input
+                  id="companyName"
+                  name="companyName"
+                  type="text"
+                  placeholder="Acme Technologies Pvt Ltd"
+                  value={formData.companyName}
+                  onChange={handleChange}
+                  className={errors.companyName ? "border-destructive" : ""}
+                />
+                {errors.companyName && (
+                  <p className="text-sm text-destructive">{errors.companyName}</p>
+                )}
+              </div>
+
               {/* Founder Name */}
               <div className="space-y-2">
                 <Label htmlFor="founderName">Founder's Full Name *</Label>
@@ -174,8 +191,9 @@ const SubmitIdea = () => {
                 type="submit"
                 size="lg"
                 className="w-full"
+                disabled={isSubmitting}
               >
-                Continue to Step 2
+                {isSubmitting ? "Submitting..." : "Submit Application"}
               </Button>
             </form>
 
