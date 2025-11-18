@@ -175,26 +175,41 @@ async function verifyCINWithCashfree(cin: string, cashfreeClientId: string, cash
     console.log(`[Cashfree] Starting verification for CIN: ${cin}`);
     
     const timestamp = Math.floor(Date.now() / 1000);
-    const message = `${timestamp}.${cashfreeClientId}`;
+    const requestBody = JSON.stringify({ cin });
+    const message = `${timestamp}.${requestBody}`;
     
     console.log(`[Cashfree] Preparing signature with timestamp: ${timestamp}`);
+    console.log(`[Cashfree] Message to sign: ${message}`);
     
-    const b64 = cashfreePublicKey.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s/g, "");
-    const bin = atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-    const publicKey = await crypto.subtle.importKey("spki", arr.buffer, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
+    // Generate HMAC-SHA256 signature using client secret
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(cashfreeClientSecret);
+    const messageData = encoder.encode(message);
     
-    const encrypted = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, publicKey, new TextEncoder().encode(message));
-    const signature = btoa(String.fromCharCode(...new Uint8Array(encrypted)));
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
+    const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
     
     console.log(`[Cashfree] Signature generated, length: ${signature.length}`);
     console.log(`[Cashfree] Making API request to https://api.cashfree.com/verification/cin`);
     
     const response = await fetch("https://api.cashfree.com/verification/cin", {
       method: "POST",
-      headers: { "x-client-id": cashfreeClientId, "x-client-secret": cashfreeClientSecret, "x-cf-signature": `${timestamp}:${signature}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ cin }),
+      headers: { 
+        "x-client-id": cashfreeClientId, 
+        "x-client-secret": cashfreeClientSecret, 
+        "x-cf-signature": signature,
+        "x-cf-timestamp": timestamp.toString(),
+        "Content-Type": "application/json" 
+      },
+      body: requestBody,
     });
     
     const responseBody = await response.json();
