@@ -8,6 +8,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// -------------------------
+// Small utilities (unchanged)
+// -------------------------
 function sha256Hex(input: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
@@ -64,13 +67,11 @@ function isFounderInDirectors(
 }
 
 // -------------------------
-// Cashfree public key helpers (RSA-OAEP + base64)
+// Cashfree public key helpers (RSA-OAEP + base64) - CORRECTED FLOW
 // -------------------------
-
 function pemToArrayBuffer(pem: string): ArrayBuffer {
   // Remove PEM header/footer and whitespace/newlines
   const b64 = pem.replace(/-----(BEGIN|END)[\s\S]+?-----/g, "").replace(/\s+/g, "");
-  // atob is available in Deno; convert base64 to binary string
   const binaryString = atob(b64);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
@@ -103,12 +104,11 @@ async function rsaEncryptBase64(message: string, publicKeyPem: string) {
 /**
  * verifyCINWithCashfree
  * Uses PUBLIC KEY flow (RSA-OAEP of `${clientId}.${timestamp}`) expected for dynamic IP environments.
- *
- * @param cin - CIN to verify (string)
+ * @param cin - CIN to verify
  * @param cashfreeClientId - x-client-id
  * @param cashfreeClientSecret - kept for compatibility but NOT used in public key flow
- * @param cashfreePublicKeyPem - PEM string of the public key downloaded from Cashfree dashboard
- * @param useSandbox - true => sandbox endpoint; false => production
+ * @param cashfreePublicKeyPem - PEM string of public key (SPKI)
+ * @param useSandbox - toggle sandbox/prod
  */
 async function verifyCINWithCashfree(
   cin: string,
@@ -120,10 +120,15 @@ async function verifyCINWithCashfree(
   try {
     console.log(`[Cashfree] Starting verification for CIN: ${cin}`);
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    // Per Cashfree docs for Public Key flow: sign/encrypt clientId + "." + timestamp
+
+    // CORRECT: sign clientId + "." + timestamp with Cashfree public key (RSA-OAEP)
     const message = `${cashfreeClientId}.${timestamp}`;
-    console.log(`[Cashfree] Preparing RSA-OAEP signature for message: ${cashfreeClientId}.(timestamp masked)`);
     const signature = await rsaEncryptBase64(message, cashfreePublicKeyPem);
+
+    // Log signature length for debugging (RSA base64 should be large, e.g. ~344 for 2048-bit key)
+    console.log(`[Cashfree] Generated signature base64 length: ${signature.length}`);
+
+    // Choose endpoint based on sandbox flag
     const url = useSandbox
       ? "https://sandbox.cashfree.com/verification/cin"
       : "https://api.cashfree.com/verification/cin";
@@ -132,8 +137,8 @@ async function verifyCINWithCashfree(
       method: "POST",
       headers: {
         "x-client-id": cashfreeClientId,
-        "x-cf-signature": signature,
         "x-cf-timestamp": timestamp,
+        "x-cf-signature": signature,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ cin }),
@@ -143,18 +148,21 @@ async function verifyCINWithCashfree(
     try {
       responseBody = await response.json();
     } catch (err) {
-      // If response is not JSON, capture text for debugging
-      const text = await response.text();
-      responseBody = { raw: text };
+      responseBody = { raw: await response.text() };
     }
 
     console.log(`[Cashfree] Response status: ${response.status}, ok: ${response.ok}`);
-    console.log(
-      `[Cashfree] Response body (truncated):`,
-      typeof responseBody === "object"
-        ? JSON.stringify(responseBody).slice(0, 800)
-        : String(responseBody).slice(0, 800),
-    );
+    // Truncate large bodies in logs
+    try {
+      console.log(
+        `[Cashfree] Response body (truncated):`,
+        typeof responseBody === "object"
+          ? JSON.stringify(responseBody).slice(0, 800)
+          : String(responseBody).slice(0, 800),
+      );
+    } catch {
+      // ignore JSON stringify errors
+    }
 
     if (!response.ok) {
       return {
@@ -165,7 +173,6 @@ async function verifyCINWithCashfree(
       };
     }
 
-    // Success: return full response body
     return responseBody;
   } catch (error) {
     console.error(`[Cashfree] Exception:`, error);
@@ -178,7 +185,7 @@ async function verifyCINWithCashfree(
 }
 
 // -------------------------
-// AI search helper (unchanged except minor logging preserved)
+// OpenAI helper to find CIN (unchanged logic)
 // -------------------------
 async function findCINWithAI(companyName: string, founderName: string, openaiApiKey: string) {
   try {
@@ -301,6 +308,9 @@ async function findCINWithAI(companyName: string, founderName: string, openaiApi
   }
 }
 
+// -------------------------
+// Facebook event helper (unchanged)
+// -------------------------
 async function sendFacebookEvent(eventName: string, email: string, phone: string, fbp?: string, fbc?: string) {
   try {
     const pixelId = "921840036600612";
@@ -331,6 +341,9 @@ async function sendFacebookEvent(eventName: string, email: string, phone: string
   }
 }
 
+// -------------------------
+// Server handler (main)
+// -------------------------
 serve(async (req) => {
   console.log("=== validate-and-submit: Request received ===");
 
@@ -473,12 +486,13 @@ serve(async (req) => {
     }
 
     // -------------------------
-    // Cashfree integration (Public Key flow)
+    // Cashfree integration (Public Key flow) - use sandbox by default, toggle via env
     // -------------------------
-    console.log("🧪 Testing Cashfree API credentials (quick test)...");
     const cfClientId = Deno.env.get("CASHFREE_CLIENT_ID")!;
-    const cfClientSecret = Deno.env.get("CASHFREE_CLIENT_SECRET")!; // kept for APIs that require it
+    const cfClientSecret = Deno.env.get("CASHFREE_CLIENT_SECRET") || ""; // not used for public key sign but kept for compatibility
     const cfPublicKeyPem = Deno.env.get("CASHFREE_PUBLIC_KEY_PEM")!;
+    const cfUseSandbox = (Deno.env.get("CASHFREE_USE_SANDBOX") ?? "true").toLowerCase() !== "false";
+
     if (!cfClientId || !cfPublicKeyPem) {
       console.error("❌ Cashfree credentials not configured");
       return new Response(JSON.stringify({ error: "Cashfree not configured" }), {
@@ -487,16 +501,11 @@ serve(async (req) => {
       });
     }
 
-    // Optional test call (you can remove or keep)
+    // Optional quick test call (uses sandbox/prod depending on env)
     try {
-      const testResult = await verifyCINWithCashfree(
-        "U72900KA2020PTC123456",
-        cfClientId,
-        cfClientSecret,
-        cfPublicKeyPem,
-        true,
-      );
-      console.log("Cashfree Test Result:", JSON.stringify(testResult, null, 2).slice(0, 800));
+      const testCIN = "U72900KA2020PTC123456";
+      const testResult = await verifyCINWithCashfree(testCIN, cfClientId, cfClientSecret, cfPublicKeyPem, cfUseSandbox);
+      console.log("Cashfree Test Result (truncated):", JSON.stringify(testResult).slice(0, 800));
     } catch (err) {
       console.warn("Cashfree test call threw:", err);
     }
@@ -506,11 +515,18 @@ serve(async (req) => {
       clientId: cfClientId.substring(0, 5) + "...",
       hasSecret: !!cfClientSecret,
       hasPublicKey: !!cfPublicKeyPem,
+      endpoint: cfUseSandbox ? "sandbox" : "production",
     });
 
-    const verificationResult = await verifyCINWithCashfree(cin, cfClientId, cfClientSecret, cfPublicKeyPem, true);
+    const verificationResult = await verifyCINWithCashfree(
+      cin,
+      cfClientId,
+      cfClientSecret,
+      cfPublicKeyPem,
+      cfUseSandbox,
+    );
 
-    console.log("Cashfree Response:", JSON.stringify(verificationResult, null, 2).slice(0, 800));
+    console.log("Cashfree Response (truncated):", JSON.stringify(verificationResult).slice(0, 800));
 
     if (verificationResult.error) {
       console.error("❌ Cashfree Error Details:", {
@@ -519,7 +535,7 @@ serve(async (req) => {
         errorType: verificationResult.errorType,
       });
 
-      // Store detailed error in database
+      // Store detailed error in database for manual review
       const { data } = await supabase
         .from("impure_leads")
         .insert({
@@ -546,11 +562,14 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    // Parse Cashfree response (structure may vary based on API version)
     const companyData = verificationResult.company_details || verificationResult;
     const verifiedCompanyName = companyData.company_name || "";
-    const companyStatus = companyData.company_status || "";
+    const companyStatus = (companyData.company_status || "").toString();
     const directorDetails = companyData.directors || [];
-    if (companyStatus.toLowerCase() !== "active") {
+
+    if ((companyStatus || "").toLowerCase() !== "active") {
       const { data } = await supabase
         .from("impure_leads")
         .insert({
@@ -577,6 +596,7 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
     const nameSimilarity = calculateSimilarity(companyName, verifiedCompanyName);
     const { matched: directorMatch, matchedDirectorName } = isFounderInDirectors(founderName, directorDetails);
 
