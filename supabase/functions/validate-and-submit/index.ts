@@ -1,4 +1,6 @@
-// server.ts
+// server.ts — Full working Deno file for Cashfree VRS v2 Verify CIN (Public Key flow)
+// NOTE: set required env vars before running/deploying.
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
@@ -9,7 +11,7 @@ const corsHeaders = {
 };
 
 // -------------------------
-// small utilities
+// Utilities
 // -------------------------
 function sha256Hex(input: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -67,7 +69,7 @@ function isFounderInDirectors(
 }
 
 // -------------------------
-// Cashfree: Public Key helpers (RSA-OAEP + base64)
+// Cashfree Public Key helpers (RSA-OAEP + base64)
 // -------------------------
 function pemToArrayBuffer(pem: string): ArrayBuffer {
   const b64 = pem.replace(/-----(BEGIN|END)[\s\S]+?-----/g, "").replace(/\s+/g, "");
@@ -94,10 +96,11 @@ async function rsaEncryptBase64(message: string, publicKeyPem: string) {
 }
 
 /**
- * verifyCINWithCashfree - follows Cashfree VRS v2 docs:
- * - headers: x-client-id, x-client-secret, x-cf-timestamp, x-cf-signature (when public-key 2FA enabled)
- * - body: { verification_id, cin }
- * - signature: base64(RSA_OAEP( clientId + "." + timestamp ))
+ * verifyCINWithCashfree
+ * - Builds message: clientId + "." + timestamp (seconds)
+ * - Encrypts with Cashfree public key (RSA-OAEP SHA-256), base64
+ * - Sends headers: x-client-id, x-client-secret, x-cf-timestamp, x-cf-signature
+ * - Body: { verification_id, cin }
  */
 async function verifyCINWithCashfree(
   cin: string,
@@ -107,34 +110,31 @@ async function verifyCINWithCashfree(
   useSandbox = true,
 ) {
   try {
-    // Config validation
+    // Basic validation
     if (!cashfreeClientId) return { error: "missing_client_id", errorType: "config_error" };
     if (!cashfreeClientSecret) return { error: "missing_client_secret", errorType: "config_error" };
     if (!cashfreePublicKeyPem || !cashfreePublicKeyPem.includes("BEGIN PUBLIC KEY"))
       return { error: "invalid_public_key_pem", errorType: "config_error" };
 
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    const message = `${cashfreeClientId}.${timestamp}`; // per docs
+    const message = `${cashfreeClientId}.${timestamp}`; // correct per docs
 
     // RSA-OAEP encrypt + base64
     const signature = await rsaEncryptBase64(message, cashfreePublicKeyPem);
 
-    // Defensive check: RSA encrypted base64 should be large (e.g. ~344 for 2048-bit key)
-    console.log("[Cashfree] signature length:", signature.length);
+    // Defensive check: base64 length of RSA-OAEP for 2048-bit key should be large (~300+)
     if (!signature || signature.length < 200) {
-      console.error("[Cashfree] Signature too short — likely wrong algorithm/key/format. Aborting.");
+      console.error("[Cashfree] Signature too short — likely wrong key/algorithm/format.");
       return { error: "signature_too_short", length: signature ? signature.length : 0, errorType: "config_error" };
     }
 
-    // Generate merchant verification_id (unique per request)
     const verificationId = `vrs_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
     const url = useSandbox
       ? "https://sandbox.cashfree.com/verification/cin"
       : "https://api.cashfree.com/verification/cin";
 
-    // Send request with required headers (x-client-secret included per docs)
-    const headers = {
+    // Headers per docs (x-client-secret included)
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "x-client-id": cashfreeClientId,
       "x-client-secret": cashfreeClientSecret,
@@ -142,14 +142,12 @@ async function verifyCINWithCashfree(
       "x-cf-signature": signature,
     };
 
-    // Log masked debug info (do not log full secret or full signature)
-    console.log("[Cashfree] Outgoing debug headers:", {
-      "x-client-id": cashfreeClientId.substring(0, 8) + "...",
-      "x-client-secret": cashfreeClientSecret ? "****" : "(missing)",
-      "x-cf-timestamp": timestamp,
-      "x-cf-signature": signature.slice(0, 8) + "..." + signature.slice(-8),
-      signature_len: signature.length,
-      verification_id: verificationId,
+    // Masked debug logging (no keys printed fully)
+    console.log("[Cashfree] Sending verify-cin:", {
+      endpoint: useSandbox ? "sandbox" : "production",
+      verificationId,
+      sig_len: signature.length,
+      clientId_mask: cashfreeClientId.slice(0, 8) + "...",
     });
 
     const res = await fetch(url, {
@@ -165,10 +163,10 @@ async function verifyCINWithCashfree(
       responseBody = { raw: await res.text() };
     }
 
-    console.log("[Cashfree] HTTP status:", res.status, "ok=", res.ok);
+    console.log("[Cashfree] HTTP", res.status, "ok=", res.ok);
     if (!res.ok) {
       console.error(
-        "[Cashfree] Response body (truncated):",
+        "[Cashfree] Response (truncated):",
         typeof responseBody === "object"
           ? JSON.stringify(responseBody).slice(0, 800)
           : String(responseBody).slice(0, 800),
@@ -182,14 +180,14 @@ async function verifyCINWithCashfree(
     }
 
     return responseBody;
-  } catch (err) {
-    console.error("[Cashfree] Exception during verify:", err);
-    return { error: err instanceof Error ? err.message : String(err), errorType: "exception" };
+  } catch (error) {
+    console.error("[Cashfree] Exception:", error);
+    return { error: error instanceof Error ? error.message : String(error), errorType: "exception" };
   }
 }
 
 // -------------------------
-// OpenAI helper: find CIN with web search (unchanged logic)
+// OpenAI helper (unchanged)
 // -------------------------
 async function findCINWithAI(companyName: string, founderName: string, openaiApiKey: string) {
   try {
@@ -242,7 +240,7 @@ async function sendFacebookEvent(eventName: string, email: string, phone: string
   try {
     const pixelId = "921840036600612";
     const accessToken =
-      "EAAQgCWx87AYBOxl3EzRLN5jJ1cq0c0dHkKTZBhj3EqZBoY0vZCOCvA7Vo2dZAI2Hn7IxDp2E62tTCMnfMmaTXvkOlSaRZCj4XsqwCJWiUTsVR4HQ19cJCY8Pq12lKq0v4gJlNGwZBVWk6l0uvOnWJbXZBxGE2bvWs87EzZBrMKpQ96ZAWz8mZABCAD9mq3LgnVRiZCfD98ZC";
+      "EAAQgCWx87AYBOxl3EzRL5jJ1cq0c0dHkKTZBhj3EqZBoY0vZCOCvA7Vo2dZAI2Hn7IxDp2E62tTCMnfMmaTXvkOlSaRZCj4XsqwCJWiUTsVR4HQ19cJCY8Pq12lKq0v4gJlNGwZBVWk6l0uvOnWJbXZBxGE2bvWs87EzZBrMKpQ96ZAWz8mZABCAD9mq3LgnVRiZCfD98ZC";
     const eventData = {
       data: [
         {
@@ -269,7 +267,7 @@ async function sendFacebookEvent(eventName: string, email: string, phone: string
 }
 
 // -------------------------
-// Optional startup test (CASHFREE_RUN_TEST="true")
+// Optional startup test (set CASHFREE_RUN_TEST="true" to run once on cold start)
 // -------------------------
 async function runStartupTestIfRequested() {
   const runTest = (Deno.env.get("CASHFREE_RUN_TEST") || "false").toLowerCase() === "true";
@@ -294,11 +292,9 @@ async function runStartupTestIfRequested() {
 runStartupTestIfRequested().catch((e) => console.warn("[StartupTest] failed", e));
 
 // -------------------------
-// Main server handler
+// Main server handler (preserves your Supabase + AI/CIN flow)
 // -------------------------
 serve(async (req) => {
-  console.log("=== validate-and-submit: Request received ===");
-
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -332,7 +328,6 @@ serve(async (req) => {
       });
     }
 
-    // Archive the submission
     await supabase
       .from("submissions")
       .insert({
@@ -346,9 +341,8 @@ serve(async (req) => {
         email,
         phone,
       });
-    console.log("Stored submission.");
 
-    // CIN detection (manual override or AI)
+    // Determine CIN (manual override or AI)
     let cin: string | null = null;
     let confidence = "unknown";
     let rawResponse = "";
@@ -422,7 +416,7 @@ serve(async (req) => {
       cfUseSandbox,
     );
 
-    // Config/signature errors -> impure with config details
+    // Handle config/signature errors separately (so ops can fix key/ids)
     if (verificationResult && verificationResult.errorType === "config_error") {
       const { data } = await supabase
         .from("impure_leads")
@@ -455,7 +449,6 @@ serve(async (req) => {
       );
     }
 
-    // API error from Cashfree -> impure
     if (verificationResult && verificationResult.error) {
       const { data } = await supabase
         .from("impure_leads")
@@ -482,7 +475,7 @@ serve(async (req) => {
       );
     }
 
-    // Successful verification path (structure may vary)
+    // Normal verification success path
     const companyData = verificationResult.company_details || verificationResult;
     const verifiedCompanyName = companyData.company_name || "";
     const companyStatus = (companyData.company_status || "").toString();
