@@ -12,13 +12,14 @@ export interface FormData {
   usp: string;
   email: string;
   phone: string;
+  cinOverride?: string; // Optional CIN input
 }
 
 type FormErrors = { [key: string]: string };
 
 export const useCINSubmissionForm = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<FormData>({ companyName: "", founderName: "", founderBackground: "", idea: "", revenueModel: "", usp: "", email: "", phone: "" });
+  const [formData, setFormData] = useState<FormData>({ companyName: "", founderName: "", founderBackground: "", idea: "", revenueModel: "", usp: "", email: "", phone: "", cinOverride: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,6 +41,15 @@ export const useCINSubmissionForm = () => {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Invalid email format";
     if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
     else if (!/^\d{10}$/.test(formData.phone)) newErrors.phone = "Phone number must be exactly 10 digits";
+    
+    // Validate CIN format if provided
+    if (formData.cinOverride && formData.cinOverride.trim()) {
+      const cinRegex = /^[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/;
+      if (!cinRegex.test(formData.cinOverride.trim())) {
+        newErrors.cinOverride = "Invalid CIN format (must be 21 characters: e.g., U72900KA2020PTC123456)";
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

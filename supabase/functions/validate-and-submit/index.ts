@@ -52,24 +52,102 @@ function isFounderInDirectors(founderName: string, directorDetails: any[]): { ma
   return { matched: false, matchedDirectorName: null };
 }
 
-async function findCINWithAI(companyName: string, founderName: string, lovableApiKey: string) {
+async function findCINWithAI(companyName: string, founderName: string, openaiApiKey: string) {
   try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    console.log(`[OpenAI CIN Search] Starting search for: ${companyName}, Founder: ${founderName}`);
+    
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
+      headers: { 
+        "Authorization": `Bearer ${openaiApiKey}`, 
+        "Content-Type": "application/json" 
+      },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "system", content: "You are a helpful assistant that searches for Indian company CIN numbers." },
-          { role: "user", content: `Find the 21-character CIN for: ${companyName}, Founder: ${founderName}. Format: [A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}` }],
+        model: "gpt-5-mini-2025-08-07", // Fast, cost-effective, good for structured lookups
+        messages: [
+          { 
+            role: "system", 
+            content: `You are an expert at finding Indian company Corporate Identification Numbers (CIN). 
+A CIN is a 21-character alphanumeric identifier in the format: [A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}
+
+Your task:
+1. Search your knowledge base for the company's CIN
+2. If found, return ONLY the 21-character CIN
+3. If not found, return exactly: "NO_CIN_FOUND"
+4. Do not provide explanations, only the CIN or "NO_CIN_FOUND"`
+          },
+          { 
+            role: "user", 
+            content: `Find the CIN for this Indian company:
+Company Name: ${companyName}
+Founder/Director: ${founderName}
+
+Return only the 21-character CIN or "NO_CIN_FOUND" if you cannot locate it.` 
+          }
+        ],
+        max_completion_tokens: 100, // GPT-5 uses max_completion_tokens instead of max_tokens
+        // Note: temperature parameter is NOT supported in GPT-5 models
       }),
     });
-    if (!response.ok) return { cin: null, confidence: "error", rawResponse: `API error: ${response.status}` };
+
+    console.log(`[OpenAI CIN Search] API Response Status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(`[OpenAI CIN Search] API Error:`, errorBody);
+      return { 
+        cin: null, 
+        confidence: "error", 
+        rawResponse: `OpenAI API error: ${response.status} - ${errorBody}`,
+        reason: `API request failed with status ${response.status}`
+      };
+    }
+
     const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content || "";
-    const match = aiResponse.match(/[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}/);
-    return match ? { cin: match[0], confidence: "medium", rawResponse: aiResponse } : { cin: null, confidence: "not_found", rawResponse: aiResponse };
+    const aiResponse = data.choices?.[0]?.message?.content?.trim() || "";
+    
+    console.log(`[OpenAI CIN Search] Raw AI Response: "${aiResponse}"`);
+
+    // Check for explicit "not found" response
+    if (aiResponse.includes("NO_CIN_FOUND")) {
+      console.log(`[OpenAI CIN Search] ❌ CIN not found in AI knowledge base`);
+      return { 
+        cin: null, 
+        confidence: "not_found", 
+        rawResponse: aiResponse,
+        reason: "AI could not locate CIN in knowledge base"
+      };
+    }
+
+    // Extract CIN using regex
+    const cinMatch = aiResponse.match(/[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}/);
+    
+    if (cinMatch) {
+      console.log(`[OpenAI CIN Search] ✅ CIN Found: ${cinMatch[0]}`);
+      return { 
+        cin: cinMatch[0], 
+        confidence: "high", 
+        rawResponse: aiResponse 
+      };
+    }
+
+    // AI responded but no valid CIN format detected
+    console.log(`[OpenAI CIN Search] ⚠️ AI responded but no valid CIN format found`);
+    return { 
+      cin: null, 
+      confidence: "invalid_format", 
+      rawResponse: aiResponse,
+      reason: "AI response did not contain valid CIN format"
+    };
+
   } catch (error) {
-    return { cin: null, confidence: "error", rawResponse: error instanceof Error ? error.message : String(error) };
+    console.error(`[OpenAI CIN Search] Exception:`, error);
+    return { 
+      cin: null, 
+      confidence: "error", 
+      rawResponse: error instanceof Error ? error.message : String(error),
+      reason: "Exception during AI search"
+    };
   }
 }
 
@@ -155,7 +233,7 @@ serve(async (req) => {
   
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const { companyName, founderName, founderBackground, idea, revenueModel, usp, email, phone, fbp, fbc } = await req.json();
+    const { companyName, founderName, founderBackground, idea, revenueModel, usp, email, phone, fbp, fbc, cinOverride } = await req.json();
     
     console.log('Parsed request data:', { 
       companyName, 
@@ -169,25 +247,78 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     
-    await supabase.from('submissions').insert({ company_name: companyName, cin: '', founder_name: founderName, founder_background: founderBackground, idea, revenue_model: revenueModel, usp, email, phone });
+    await supabase.from('submissions').insert({ company_name: companyName, cin: cinOverride || '', founder_name: founderName, founder_background: founderBackground, idea, revenue_model: revenueModel, usp, email, phone });
     console.log('✅ Archived to submissions table');
     
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      console.error('❌ LOVABLE_API_KEY not configured');
-      return new Response(JSON.stringify({ error: "AI service not configured" }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Phase 4: Manual CIN Override Logic
+    let cin: string | null = null;
+    let confidence: string;
+    let rawResponse: string;
+    let reason: string | undefined;
+    
+    if (cinOverride && /^[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/.test(cinOverride)) {
+      console.log(`✅ Using manually provided CIN: ${cinOverride}`);
+      cin = cinOverride;
+      confidence = "manual";
+      rawResponse = "Provided by user";
+      reason = "Manual CIN provided by user";
+    } else {
+      // Run AI search with OpenAI
+      const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+      if (!openaiApiKey) {
+        console.error('❌ OPENAI_API_KEY not configured');
+        return new Response(JSON.stringify({ error: "AI service not configured" }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
+      console.log('🔍 Starting OpenAI CIN search...');
+      const aiResult = await findCINWithAI(companyName, founderName, openaiApiKey);
+      cin = aiResult.cin;
+      confidence = aiResult.confidence;
+      rawResponse = aiResult.rawResponse;
+      reason = aiResult.reason;
     }
     
-    console.log('🔍 Starting AI CIN search...');
-    const { cin, confidence } = await findCINWithAI(companyName, founderName, lovableApiKey);
-    console.log('AI Search Result:', { cin, confidence, companyName });
+    console.log('AI Search Result:', { cin, confidence, companyName, reason });
     
+    // Phase 3: Improved "CIN Not Found" Handling with Manual Review Path
     if (!cin) {
-      console.log('❌ No CIN found by AI - routing to impure_leads');
-      const { data } = await supabase.from('impure_leads').insert({ company_name: companyName, founder_name: founderName, founder_background: founderBackground, idea, revenue_model: revenueModel, usp, email, phone, cin_found_by_ai: null, ai_search_confidence: confidence, ai_search_failed: true, rejection_reason: "CIN not found by AI search" }).select().single();
-      console.log('Stored in impure_leads with ID:', data.id);
-      await sendFacebookEvent('lead_A', email, phone, fbp, fbc);
-      return new Response(JSON.stringify({ ok: true, leadType: 'impure', leadId: data.id, reason: 'CIN not found' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.log(`❌ No CIN found - routing to impure_leads for manual review`);
+      console.log(`Reason: ${reason || 'Unknown'}`);
+      console.log(`Raw AI Response: ${rawResponse}`);
+      
+      const { data } = await supabase.from('impure_leads').insert({ 
+        company_name: companyName, 
+        founder_name: founderName, 
+        founder_background: founderBackground, 
+        idea, 
+        revenue_model: revenueModel, 
+        usp, 
+        email, 
+        phone, 
+        cin_found_by_ai: null, 
+        ai_search_confidence: confidence, 
+        ai_search_failed: true, 
+        rejection_reason: `CIN not found. Reason: ${reason || 'AI returned no CIN'}`,
+        verification_error_details: { 
+          ai_confidence: confidence, 
+          raw_response: rawResponse,
+          search_reason: reason,
+          manual_review_required: true  // Flag for manual review queue
+        }
+      }).select().single();
+      
+      console.log(`Stored in impure_leads with ID: ${data.id} (flagged for manual review)`);
+      await sendFacebookEvent('Lead', email, phone, fbp, fbc);
+      
+      return new Response(JSON.stringify({ 
+        ok: true, 
+        leadType: 'impure', 
+        leadId: data.id,
+        reason: 'CIN not found - pending manual review',
+        message: 'Thank you! Your submission is under review.'
+      }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
     }
     // Test Cashfree credentials with known valid CIN
     console.log('🧪 Testing Cashfree API credentials...');
