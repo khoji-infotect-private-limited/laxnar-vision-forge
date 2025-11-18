@@ -36,6 +36,7 @@ export type Database = {
           rejection_reason: string
           revenue_model: string
           usp: string
+          verification_error_details: Json | null
           verification_id: string | null
           verified_company_name: string | null
         }
@@ -60,6 +61,7 @@ export type Database = {
           rejection_reason: string
           revenue_model: string
           usp: string
+          verification_error_details?: Json | null
           verification_id?: string | null
           verified_company_name?: string | null
         }
@@ -84,6 +86,7 @@ export type Database = {
           rejection_reason?: string
           revenue_model?: string
           usp?: string
+          verification_error_details?: Json | null
           verification_id?: string | null
           verified_company_name?: string | null
         }
