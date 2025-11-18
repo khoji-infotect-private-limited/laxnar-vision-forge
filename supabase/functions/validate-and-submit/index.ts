@@ -1,405 +1,164 @@
-// edge-validate-and-submit.ts
-import "https://deno.land/x/xhr@0.1.0/mod.ts"; // keep if you rely on polyfill in some envs
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
-import { createHash } from "https://deno.land/std@0.168.0/node/crypto.ts";
-
-/**
- * Edge Function: validate-and-submit
- * - Validates CIN using Cashfree Verification API (public-key signature)
- * - Stores submission in Supabase
- * - Sends Facebook Conversions API event (server-side)
- *
- * Logging: verbose debug logs included to help diagnose "Signature mismatch" issues.
- * Remove or reduce logs after confirming with Cashfree.
- */
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function sha256Hex(input: string) {
-  return createHash("sha256").update(input).digest("hex");
-}
-
-function normalizeName(s?: string) {
-  if (!s) return "";
-  return s.toLowerCase().trim().replace(/\s+/g, " ");
-}
-
-// Convert PEM public key to ArrayBuffer (DER) for import
-function pemToArrayBuffer(pem: string) {
-  const b64 = pem
-    .replace(/-----BEGIN PUBLIC KEY-----/g, "")
-    .replace(/-----END PUBLIC KEY-----/g, "")
-    .replace(/\s+/g, "");
-  const binary = atob(b64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
-}
-
-// RSA-OAEP encrypt and base64 encode (returns base64 signature)
-// NOTE: Cashfree uses RSA-OAEP with SHA-1 (OpenSSL default), not SHA-256
-async function rsaEncryptBase64Oaep(pemPublicKey: string, message: string) {
-  const der = pemToArrayBuffer(pemPublicKey);
-  const cryptoKey = await crypto.subtle.importKey("spki", der, { name: "RSA-OAEP", hash: "SHA-1" }, false, [
-    "encrypt",
-  ]);
-  const encoded = new TextEncoder().encode(message);
-  const encrypted = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, cryptoKey, encoded);
-  const u8 = new Uint8Array(encrypted);
-  // base64 encode
-  let binary = "";
-  for (let i = 0; i < u8.byteLength; i++) binary += String.fromCharCode(u8[i]);
-  return btoa(binary);
-}
-
-// main server
-serve(async (req) => {
-  // CORS preflight
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ ok: false, error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // parse body
-  let body: any;
-  try {
-    body = await req.json();
-  } catch (e) {
-    console.error("Invalid JSON body:", e.message);
-    return new Response(JSON.stringify({ ok: false, error: "Invalid JSON body" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  const { companyName, cin, founderName, founderBackground, idea, revenueModel, usp, email, phone } = body || {};
-
-  // Basic required fields check (CIN is now optional)
-  if (!companyName || !founderName || !idea || !revenueModel || !usp || !email || !phone) {
-    console.warn("Missing required fields", {
-      companyNamePresent: !!companyName,
-      cinPresent: !!cin,
-      founderNamePresent: !!founderName,
-      emailPresent: !!email,
-      phonePresent: !!phone,
-    });
-    return new Response(JSON.stringify({ ok: false, error: "Missing required fields" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // CIN is optional - if provided, normalize and validate format
-  const cinNormalized = cin ? String(cin).toUpperCase().trim() : "";
-  if (cinNormalized && !/^[A-Z0-9]{21}$/.test(cinNormalized)) {
-    console.warn("Invalid CIN format", { cin });
-    return new Response(JSON.stringify({ ok: false, error: "Invalid CIN format" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // Initialize verification variables
-  let verificationData: any = null;
-  let companyStatus = "";
-  let verifiedCompanyName = "";
-  let debugSignatureInfo: { dataToSign?: string; timestamp?: string; signature?: string } = {};
-
-  // Only perform CIN verification if CIN is provided
-  if (cinNormalized) {
-    // Load env
-    const clientId = Deno.env.get("CASHFREE_CLIENT_ID");
-    const clientSecret = Deno.env.get("CASHFREE_CLIENT_SECRET");
-    const pemPublic = Deno.env.get("CASHFREE_PUBLIC_KEY_PEM") || "";
-    const useSignatureEnv = (Deno.env.get("CASHFREE_USE_SIGNATURE") ?? "true").toLowerCase();
-    const useSignature = useSignatureEnv === "true" || useSignatureEnv === "1";
-
-    if (!clientId || !clientSecret) {
-      console.error("Missing Cashfree clientId/secret in environment");
-      return new Response(JSON.stringify({ ok: false, error: "Server configuration error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Build Cashfree request
-    const cashfreeUrl = "https://api.cashfree.com/verification/cin";
-    const verificationId = `LAXNAR-${Date.now()}`;
-
-    // Prepare headers
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "x-client-id": clientId,
-      "x-client-secret": clientSecret,
-    };
-
-    try {
-      if (useSignature) {
-        if (!pemPublic) {
-          console.error("CASHFREE_USE_SIGNATURE true but CASHFREE_PUBLIC_KEY_PEM missing");
-          return new Response(JSON.stringify({ ok: false, error: "Server configuration error (public key missing)" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        // IMPORTANT: timestamp in seconds
-        const timestamp = Math.floor(Date.now() / 1000).toString();
-        const dataToSign = `${clientId}.${timestamp}`;
-
-        // Generate signature using RSA-OAEP (SHA-256)
-        const signature = await rsaEncryptBase64Oaep(pemPublic, dataToSign);
-
-        // Attach signature headers
-        headers["x-cf-timestamp"] = timestamp;
-        headers["x-cf-signature"] = signature;
-
-        // Save debug info (do NOT log secrets like clientSecret)
-        debugSignatureInfo = { dataToSign, timestamp, signature };
-        console.info("Generated Cashfree signature", { dataToSign, timestamp, signature });
-      } else {
-        console.info("CASHFREE_USE_SIGNATURE is false — calling Cashfree without x-cf-signature (IP-whitelist mode).");
-      }
-    } catch (err) {
-      console.error("Error generating Cashfree signature:", err);
-      return new Response(JSON.stringify({ ok: false, error: "Failed to generate Cashfree signature" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Call Cashfree
-    try {
-      const payload = { verification_id: `LAXNAR-${Date.now()}`, cin: cinNormalized };
-      console.info("Calling Cashfree verification API", { url: cashfreeUrl, cin: cinNormalized });
-
-      const cfResp = await fetch(cashfreeUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-      });
-
-      const respText = await cfResp.text();
-      let parsed: any = null;
-      try {
-        parsed = JSON.parse(respText);
-      } catch (e) {
-        console.error("Cashfree response not JSON", { status: cfResp.status, textSnippet: respText.slice(0, 200) });
-        return new Response(JSON.stringify({ ok: false, error: "Verification service error (non-JSON response)" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      console.info("Cashfree HTTP status", cfResp.status);
-      console.debug("Cashfree response body", parsed);
-
-      if (!cfResp.ok) {
-        // Helpful debug info to copy to Cashfree support (do NOT include clientSecret)
-        console.error("Cashfree API error (non-OK)", { status: cfResp.status, body: parsed, debugSignatureInfo });
-        const providerMessage = parsed?.message || parsed?.error || JSON.stringify(parsed);
-        return new Response(JSON.stringify({ ok: false, accepted: false, error: providerMessage }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      verificationData = parsed;
-    } catch (err) {
-      console.error("Error calling Cashfree API:", err);
-      return new Response(JSON.stringify({ ok: false, error: "Verification service unavailable. Please try later." }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Inspect verificationData fields (adapt if Cashfree uses different keys)
-    companyStatus = verificationData.cin_status || verificationData.company_status || verificationData.status || "";
-    const companyType = verificationData.company_type || verificationData.type || verificationData.company_class || "";
-    verifiedCompanyName = verificationData.company_name || verificationData.name || "";
-    
-    // Extract company type from company name if not provided
-    const inferredCompanyType = verifiedCompanyName.toLowerCase().includes("private") ? "private" : companyType;
-
-    console.info("Verification result summary", { companyStatus, companyType, verifiedCompanyName });
-
-    // Validate status & type
-    if (!companyStatus || String(companyStatus).toLowerCase() !== "active") {
-      console.warn("Company not active", { companyStatus });
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          accepted: false,
-          error:
-            "We only accept Active Private Limited companies. If you think this is an error, contact hello@laxnar.ai.",
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    if (!inferredCompanyType || !String(inferredCompanyType).toLowerCase().includes("private")) {
-      console.warn("Company not private limited", { companyType, inferredCompanyType });
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          accepted: false,
-          error:
-            "We only accept Active Private Limited companies. If you think this is an error, contact hello@laxnar.ai.",
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Basic name fuzzy match
-    const submittedNorm = normalizeName(companyName);
-    const verifiedNorm = normalizeName(verifiedCompanyName);
-    if (submittedNorm && verifiedNorm) {
-      const minLen = Math.min(8, Math.max(4, Math.floor(verifiedNorm.length / 2)));
-      const match =
-        submittedNorm.includes(verifiedNorm.substring(0, minLen)) ||
-        verifiedNorm.includes(submittedNorm.substring(0, minLen));
-      if (!match) {
-        console.warn("Name mismatch", { submittedNorm, verifiedNorm });
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            accepted: false,
-            error: "Company name does not match CIN record — please confirm.",
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-    }
-  } else {
-    console.info("No CIN provided - skipping Cashfree verification");
-  }
-
-  // Persist to Supabase
-  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
-  if (!supabaseUrl || !supabaseKey) {
-    console.error("Missing Supabase env vars");
-    return new Response(JSON.stringify({ ok: false, error: "Server configuration error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  try {
-    const insertPayload = {
-      company_name: companyName,
-      cin: cinNormalized || "",
-      founder_name: founderName,
-      founder_background: founderBackground,
-      idea,
-      revenue_model: revenueModel,
-      usp,
-      email,
-      phone: phone || "",
-      company_status: companyStatus || null,
-      verified_company_name: verifiedCompanyName || null,
-      verification_id: verificationData?.verification_id || null,
-      reference_id: verificationData?.reference_id?.toString() || null,
-      registration_number: verificationData?.registration_number || null,
-      incorporation_date: verificationData?.incorporation_date || null,
-      cin_status: verificationData?.cin_status || null,
-      verified_email: verificationData?.email || null,
-      incorporation_country: verificationData?.incorporation_country || null,
-      director_details: verificationData?.director_details || null,
-      created_at: new Date().toISOString(),
-    };
-
-    const { data, error } = await supabase.from("submissions").insert([insertPayload]);
-
-    if (error) {
-      console.error("Supabase insert error", error);
-      return new Response(JSON.stringify({ ok: false, error: "Failed to save submission" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    console.info("Saved submission to Supabase", {
-      company: companyName,
-      cin: cinNormalized,
-      id: data?.[0]?.id ?? null,
-    });
-  } catch (err) {
-    console.error("Error saving to Supabase", err);
-    return new Response(JSON.stringify({ ok: false, error: "Database error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // Fire Facebook Conversions API (server-side) - hashed PII
-  const fbPixelId = Deno.env.get("FB_PIXEL_ID") ?? "864907882634894";
-  const fbAccessToken = Deno.env.get("FB_CONVERSION_API_TOKEN");
-
-  if (fbAccessToken) {
-    try {
-      const hashedEmail = sha256Hex(String(email).trim().toLowerCase());
-      const hashedPhone = phone ? sha256Hex(String(phone).replace(/\D/g, "")) : undefined;
-
-      const fbPayload = {
-        data: [
-          {
-            event_name: "Lead",
-            event_time: Math.floor(Date.now() / 1000),
-            action_source: "website",
-            user_data: {
-              em: hashedEmail,
-              ...(hashedPhone ? { ph: hashedPhone } : {}),
-            },
-            custom_data: {
-              lead_type: cinNormalized ? "validated_cin" : "no_cin_provided",
-              company_name: verifiedCompanyName || companyName,
-            },
-          },
-        ],
-        access_token: fbAccessToken,
-      };
-
-      const fbResp = await fetch(`https://graph.facebook.com/v18.0/${fbPixelId}/events`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fbPayload),
-      });
-
-      const fbText = await fbResp.text();
-      console.info("Facebook CAPI response", { status: fbResp.status, textSnippet: fbText.slice(0, 200) });
-    } catch (fbErr) {
-      console.error("Facebook Conversions API error", fbErr);
-      // continue — don't fail the flow for analytics failure
-    }
-  } else {
-    console.info("FB_CONVERSION_API_TOKEN not set - skipping server-side CAPI");
-  }
-
-  // Final success response
-  return new Response(
-    JSON.stringify({
-      ok: true,
-      accepted: true,
-      verifiedCompanyName,
-      debugSignatureInfo: debugSignatureInfo, // useful to copy/paste to Cashfree support for debugging
-    }),
-    {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    },
+function sha256Hex(input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  return crypto.subtle.digest("SHA-256", data).then((buf) =>
+    Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("")
   );
+}
+
+function normalizeName(s?: string): string {
+  if (!s) return "";
+  return s.toLowerCase().replace(/\b(private\s+limited|pvt\.?\s*ltd\.?|ltd\.?|llc|inc\.?|corporation|corp\.?)\b/gi, "")
+    .replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function calculateSimilarity(str1: string, str2: string): number {
+  const s1 = normalizeName(str1);
+  const s2 = normalizeName(str2);
+  const len1 = s1.length, len2 = s2.length;
+  const matrix: number[][] = [];
+  for (let i = 0; i <= len1; i++) matrix[i] = [i];
+  for (let j = 0; j <= len2; j++) matrix[0][j] = j;
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
+    }
+  }
+  const distance = matrix[len1][len2];
+  const maxLen = Math.max(len1, len2);
+  return maxLen === 0 ? 1 : 1 - distance / maxLen;
+}
+
+function isFounderInDirectors(founderName: string, directorDetails: any[]): { matched: boolean; matchedDirectorName: string | null } {
+  if (!directorDetails || !Array.isArray(directorDetails)) return { matched: false, matchedDirectorName: null };
+  const normalizedFounder = normalizeName(founderName);
+  const founderParts = normalizedFounder.split(/\s+/);
+  for (const director of directorDetails) {
+    const directorName = director?.name || director?.director_name || "";
+    const normalizedDirector = normalizeName(directorName);
+    const allPartsMatch = founderParts.every(part => normalizedDirector.includes(part) && part.length > 0);
+    if (allPartsMatch) return { matched: true, matchedDirectorName: directorName };
+  }
+  return { matched: false, matchedDirectorName: null };
+}
+
+async function findCINWithAI(companyName: string, founderName: string, lovableApiKey: string) {
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [{ role: "system", content: "You are a helpful assistant that searches for Indian company CIN numbers." },
+          { role: "user", content: `Find the 21-character CIN for: ${companyName}, Founder: ${founderName}. Format: [A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}` }],
+      }),
+    });
+    if (!response.ok) return { cin: null, confidence: "error", rawResponse: `API error: ${response.status}` };
+    const data = await response.json();
+    const aiResponse = data.choices?.[0]?.message?.content || "";
+    const match = aiResponse.match(/[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}/);
+    return match ? { cin: match[0], confidence: "medium", rawResponse: aiResponse } : { cin: null, confidence: "not_found", rawResponse: aiResponse };
+  } catch (error) {
+    return { cin: null, confidence: "error", rawResponse: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+async function verifyCINWithCashfree(cin: string, cashfreeClientId: string, cashfreeClientSecret: string, cashfreePublicKey: string) {
+  try {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const message = `${timestamp}.${cashfreeClientId}`;
+    const b64 = cashfreePublicKey.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s/g, "");
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const publicKey = await crypto.subtle.importKey("spki", arr.buffer, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
+    const encrypted = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, publicKey, new TextEncoder().encode(message));
+    const signature = btoa(String.fromCharCode(...new Uint8Array(encrypted)));
+    const response = await fetch("https://api.cashfree.com/verification/cin", {
+      method: "POST",
+      headers: { "x-client-id": cashfreeClientId, "x-client-secret": cashfreeClientSecret, "x-cf-signature": `${timestamp}:${signature}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ cin }),
+    });
+    return response.ok ? await response.json() : { error: await response.json(), status: response.status };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+async function sendFacebookEvent(eventName: string, email: string, phone: string, fbp?: string, fbc?: string) {
+  try {
+    const pixelId = '921840036600612';
+    const accessToken = 'EAAQgCWx87AYBOxl3EzRLN5jJ1cq0c0dHkKTZBhj3EqZBoY0vZCOCvA7Vo2dZAI2Hn7IxDp2E62tTCMnfMmaTXvkOlSaRZCj4XsqwCJWiUTsVR4HQ19cJCY8Pq12lKq0v4gJlNGwZBVWk6l0uvOnWJbXZBxGE2bvWs87EzZBrMKpQ96ZAWz8mZABCAD9mq3LgnVRiZCfD98ZC';
+    const eventData = {
+      data: [{ event_name: eventName, event_time: Math.floor(Date.now() / 1000), action_source: 'website',
+        user_data: { em: [await sha256Hex(email.toLowerCase().trim())], ph: [await sha256Hex(phone.replace(/\D/g, ''))], ...(fbp && { fbp }), ...(fbc && { fbc }) }}]
+    };
+    await fetch(`https://graph.facebook.com/v21.0/${pixelId}/events?access_token=${accessToken}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData)
+    });
+  } catch (error) {
+    console.error(`[Facebook] Error:`, error);
+  }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  try {
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { companyName, founderName, founderBackground, idea, revenueModel, usp, email, phone, fbp, fbc } = await req.json();
+    if (!companyName || !founderName || !email || !phone) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    await supabase.from('submissions').insert({ company_name: companyName, cin: '', founder_name: founderName, founder_background: founderBackground, idea, revenue_model: revenueModel, usp, email, phone });
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) return new Response(JSON.stringify({ error: "AI service not configured" }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const { cin, confidence } = await findCINWithAI(companyName, founderName, lovableApiKey);
+    if (!cin) {
+      const { data } = await supabase.from('impure_leads').insert({ company_name: companyName, founder_name: founderName, founder_background: founderBackground, idea, revenue_model: revenueModel, usp, email, phone, cin_found_by_ai: null, ai_search_confidence: confidence, ai_search_failed: true, rejection_reason: "CIN not found by AI search" }).select().single();
+      await sendFacebookEvent('lead_A', email, phone, fbp, fbc);
+      return new Response(JSON.stringify({ ok: true, leadType: 'impure', leadId: data.id, reason: 'CIN not found' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const verificationResult = await verifyCINWithCashfree(cin, Deno.env.get('CASHFREE_CLIENT_ID')!, Deno.env.get('CASHFREE_CLIENT_SECRET')!, Deno.env.get('CASHFREE_PUBLIC_KEY_PEM')!);
+    if (verificationResult.error) {
+      const { data } = await supabase.from('impure_leads').insert({ company_name: companyName, founder_name: founderName, founder_background: founderBackground, idea, revenue_model: revenueModel, usp, email, phone, cin_found_by_ai: cin, ai_search_confidence: confidence, rejection_reason: "Cashfree verification failed" }).select().single();
+      await sendFacebookEvent('lead_A', email, phone, fbp, fbc);
+      return new Response(JSON.stringify({ ok: true, leadType: 'impure', leadId: data.id, reason: 'Verification failed' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const companyData = verificationResult.company_details || verificationResult;
+    const verifiedCompanyName = companyData.company_name || "";
+    const companyStatus = companyData.company_status || "";
+    const directorDetails = companyData.directors || [];
+    if (companyStatus.toLowerCase() !== "active") {
+      const { data } = await supabase.from('impure_leads').insert({ company_name: companyName, founder_name: founderName, founder_background: founderBackground, idea, revenue_model: revenueModel, usp, email, phone, cin_found_by_ai: cin, ai_search_confidence: confidence, verified_company_name: verifiedCompanyName, company_status: companyStatus, director_details: directorDetails, rejection_reason: `Company not active (${companyStatus})` }).select().single();
+      await sendFacebookEvent('lead_A', email, phone, fbp, fbc);
+      return new Response(JSON.stringify({ ok: true, leadType: 'impure', leadId: data.id, reason: 'Company not active' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const nameSimilarity = calculateSimilarity(companyName, verifiedCompanyName);
+    const { matched: directorMatch, matchedDirectorName } = isFounderInDirectors(founderName, directorDetails);
+    const isPure = nameSimilarity >= 0.80 && directorMatch;
+    if (isPure) {
+      const { data } = await supabase.from('pure_conversions').insert({ company_name: companyName, founder_name: founderName, founder_background: founderBackground, idea, revenue_model: revenueModel, usp, email, phone, cin_found_by_ai: cin, ai_search_confidence: confidence, verified_company_name: verifiedCompanyName, verification_id: verificationResult.verification_id, reference_id: verificationResult.reference_id, company_status: companyStatus, cin_status: companyData.cin_status, registration_number: companyData.registration_number, incorporation_date: companyData.date_of_incorporation, incorporation_country: companyData.country_of_incorporation, director_details: directorDetails, company_name_match_score: nameSimilarity, director_name_match: directorMatch, matched_director_name: matchedDirectorName }).select().single();
+      await sendFacebookEvent('CompleteRegistration', email, phone, fbp, fbc);
+      return new Response(JSON.stringify({ ok: true, accepted: true, leadType: 'pure', leadId: data.id, verifiedCompanyName }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    } else {
+      const rejectionReasons = [];
+      if (nameSimilarity < 0.80) rejectionReasons.push(`Name similarity too low (${(nameSimilarity * 100).toFixed(0)}% < 80%)`);
+      if (!directorMatch) rejectionReasons.push("Founder not found in director list");
+      const { data } = await supabase.from('impure_leads').insert({ company_name: companyName, founder_name: founderName, founder_background: founderBackground, idea, revenue_model: revenueModel, usp, email, phone, cin_found_by_ai: cin, ai_search_confidence: confidence, verified_company_name: verifiedCompanyName, verification_id: verificationResult.verification_id, company_status: companyStatus, director_details: directorDetails, rejection_reason: rejectionReasons.join("; "), company_name_match_score: nameSimilarity, director_name_match: directorMatch }).select().single();
+      await sendFacebookEvent('lead_A', email, phone, fbp, fbc);
+      return new Response(JSON.stringify({ ok: true, leadType: 'impure', leadId: data.id, reason: rejectionReasons.join("; ") }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
 });

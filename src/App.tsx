@@ -9,7 +9,6 @@ import Projects from "./pages/Projects";
 import HerSafeZone from "./pages/HerSafeZone";
 import Landing from "./pages/Landing";
 import SubmitIdea from "./pages/SubmitIdea";
-import CompanyVerification from "./pages/CompanyVerification";
 import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
 import ReptileCursor from "./components/ReptileCursor";
@@ -29,7 +28,6 @@ const App = () => (
           <Route path="/hersafezone" element={<HerSafeZone />} />
           <Route path="/landing" element={<Landing />} />
           <Route path="/submit-idea" element={<SubmitIdea />} />
-          <Route path="/company-verification" element={<CompanyVerification />} />
           <Route path="/thank-you" element={<ThankYou />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

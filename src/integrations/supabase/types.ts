@@ -14,6 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
+      impure_leads: {
+        Row: {
+          ai_search_confidence: string | null
+          ai_search_failed: boolean | null
+          cin_found_by_ai: string | null
+          company_name: string
+          company_name_match_score: number | null
+          company_status: string | null
+          created_at: string
+          director_details: Json | null
+          director_name_match: boolean | null
+          email: string
+          fb_event_id: string | null
+          founder_background: string
+          founder_name: string
+          id: string
+          idea: string
+          lead_score: number | null
+          phone: string
+          rejection_reason: string
+          revenue_model: string
+          usp: string
+          verification_id: string | null
+          verified_company_name: string | null
+        }
+        Insert: {
+          ai_search_confidence?: string | null
+          ai_search_failed?: boolean | null
+          cin_found_by_ai?: string | null
+          company_name: string
+          company_name_match_score?: number | null
+          company_status?: string | null
+          created_at?: string
+          director_details?: Json | null
+          director_name_match?: boolean | null
+          email: string
+          fb_event_id?: string | null
+          founder_background: string
+          founder_name: string
+          id?: string
+          idea: string
+          lead_score?: number | null
+          phone: string
+          rejection_reason: string
+          revenue_model: string
+          usp: string
+          verification_id?: string | null
+          verified_company_name?: string | null
+        }
+        Update: {
+          ai_search_confidence?: string | null
+          ai_search_failed?: boolean | null
+          cin_found_by_ai?: string | null
+          company_name?: string
+          company_name_match_score?: number | null
+          company_status?: string | null
+          created_at?: string
+          director_details?: Json | null
+          director_name_match?: boolean | null
+          email?: string
+          fb_event_id?: string | null
+          founder_background?: string
+          founder_name?: string
+          id?: string
+          idea?: string
+          lead_score?: number | null
+          phone?: string
+          rejection_reason?: string
+          revenue_model?: string
+          usp?: string
+          verification_id?: string | null
+          verified_company_name?: string | null
+        }
+        Relationships: []
+      }
+      pure_conversions: {
+        Row: {
+          ai_search_confidence: string | null
+          cin_found_by_ai: string
+          cin_status: string | null
+          company_name: string
+          company_name_match_score: number | null
+          company_status: string | null
+          conversion_value: number | null
+          created_at: string
+          director_details: Json | null
+          director_name_match: boolean | null
+          email: string
+          fb_event_id: string | null
+          founder_background: string
+          founder_name: string
+          id: string
+          idea: string
+          incorporation_country: string | null
+          incorporation_date: string | null
+          matched_director_name: string | null
+          phone: string
+          reference_id: string | null
+          registration_number: string | null
+          revenue_model: string
+          usp: string
+          verification_id: string | null
+          verified_company_name: string
+        }
+        Insert: {
+          ai_search_confidence?: string | null
+          cin_found_by_ai: string
+          cin_status?: string | null
+          company_name: string
+          company_name_match_score?: number | null
+          company_status?: string | null
+          conversion_value?: number | null
+          created_at?: string
+          director_details?: Json | null
+          director_name_match?: boolean | null
+          email: string
+          fb_event_id?: string | null
+          founder_background: string
+          founder_name: string
+          id?: string
+          idea: string
+          incorporation_country?: string | null
+          incorporation_date?: string | null
+          matched_director_name?: string | null
+          phone: string
+          reference_id?: string | null
+          registration_number?: string | null
+          revenue_model: string
+          usp: string
+          verification_id?: string | null
+          verified_company_name: string
+        }
+        Update: {
+          ai_search_confidence?: string | null
+          cin_found_by_ai?: string
+          cin_status?: string | null
+          company_name?: string
+          company_name_match_score?: number | null
+          company_status?: string | null
+          conversion_value?: number | null
+          created_at?: string
+          director_details?: Json | null
+          director_name_match?: boolean | null
+          email?: string
+          fb_event_id?: string | null
+          founder_background?: string
+          founder_name?: string
+          id?: string
+          idea?: string
+          incorporation_country?: string | null
+          incorporation_date?: string | null
+          matched_director_name?: string | null
+          phone?: string
+          reference_id?: string | null
+          registration_number?: string | null
+          revenue_model?: string
+          usp?: string
+          verification_id?: string | null
+          verified_company_name?: string
+        }
+        Relationships: []
+      }
       submissions: {
         Row: {
           cin: string
