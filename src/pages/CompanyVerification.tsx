@@ -99,11 +99,6 @@ const CompanyVerification = () => {
       if (error) throw error;
 
       if (data?.ok && data?.accepted) {
-        // Track CompleteRegistration event
-        if (typeof window !== 'undefined' && (window as any).fbq) {
-          (window as any).fbq('track', 'CompleteRegistration');
-        }
-
         // Clear stored data
         localStorage.removeItem("laxnar_step1_data");
 
