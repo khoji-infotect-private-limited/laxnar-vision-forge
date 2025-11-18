@@ -54,68 +54,81 @@ function isFounderInDirectors(founderName: string, directorDetails: any[]): { ma
 
 async function findCINWithAI(companyName: string, founderName: string, openaiApiKey: string) {
   try {
-    console.log(`[OpenAI CIN Search] Starting search for: ${companyName}, Founder: ${founderName}`);
+    console.log(`[OpenAI Web Search] Starting search for: ${companyName}, Founder: ${founderName}`);
     
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const searchQuery = `Find the Corporate Identification Number (CIN) for the Indian company "${companyName}" with founder/director ${founderName}. A CIN is a 21-character alphanumeric code in format [A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}. Return ONLY the exact 21-character CIN if found, or "NO_CIN_FOUND" if not available.`;
+    
+    const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: { 
         "Authorization": `Bearer ${openaiApiKey}`, 
         "Content-Type": "application/json" 
       },
       body: JSON.stringify({
-        model: "gpt-5-mini-2025-08-07", // Fast, cost-effective, good for structured lookups
-        messages: [
-          { 
-            role: "system", 
-            content: `You are an expert at finding Indian company Corporate Identification Numbers (CIN). 
-A CIN is a 21-character alphanumeric identifier in the format: [A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}
-
-Your task:
-1. Search your knowledge base for the company's CIN
-2. If found, return ONLY the 21-character CIN
-3. If not found, return exactly: "NO_CIN_FOUND"
-4. Do not provide explanations, only the CIN or "NO_CIN_FOUND"`
-          },
-          { 
-            role: "user", 
-            content: `Find the CIN for this Indian company:
-Company Name: ${companyName}
-Founder/Director: ${founderName}
-
-Return only the 21-character CIN or "NO_CIN_FOUND" if you cannot locate it.` 
-          }
-        ],
-        max_completion_tokens: 100, // GPT-5 uses max_completion_tokens instead of max_tokens
-        // Note: temperature parameter is NOT supported in GPT-5 models
+        model: "gpt-5-mini",
+        tools: [{ type: "web_search" }],
+        input: searchQuery
       }),
     });
 
-    console.log(`[OpenAI CIN Search] API Response Status: ${response.status}`);
+    console.log(`[OpenAI Web Search] API Response Status: ${response.status}`);
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error(`[OpenAI CIN Search] API Error:`, errorBody);
+      console.error(`[OpenAI Web Search] API Error:`, errorBody);
       return { 
         cin: null, 
         confidence: "error", 
-        rawResponse: `OpenAI API error: ${response.status} - ${errorBody}`,
+        rawResponse: `API error: ${response.status} - ${errorBody}`,
         reason: `API request failed with status ${response.status}`
       };
     }
 
     const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content?.trim() || "";
+    const outputItems = data.output || [];
     
-    console.log(`[OpenAI CIN Search] Raw AI Response: "${aiResponse}"`);
+    console.log(`[OpenAI Web Search] Response structure:`, JSON.stringify(data, null, 2).substring(0, 500));
+    
+    // Find message item in output
+    const messageItem = outputItems.find((item: any) => item.type === "message");
+    
+    if (!messageItem) {
+      console.log(`[OpenAI Web Search] No message in response`);
+      return {
+        cin: null,
+        confidence: "no_response",
+        rawResponse: JSON.stringify(data),
+        reason: "No message content in API response"
+      };
+    }
+    
+    // Extract text from message content
+    const textContent = messageItem.content?.find((c: any) => c.type === "output_text");
+    const aiResponse = textContent?.text?.trim() || "";
+    const citations = textContent?.annotations || [];
+    
+    console.log(`[OpenAI Web Search] Raw AI Response: "${aiResponse}"`);
+    console.log(`[OpenAI Web Search] Number of citations:`, citations.length);
 
-    // Check for explicit "not found" response
-    if (aiResponse.includes("NO_CIN_FOUND")) {
-      console.log(`[OpenAI CIN Search] ❌ CIN not found in AI knowledge base`);
+    // Log sources consulted
+    const sources = data.sources || [];
+    if (sources.length > 0) {
+      console.log(`[OpenAI Web Search] Sources consulted (${sources.length}):`, 
+        sources.slice(0, 5).map((s: any) => s.url || s));
+    }
+
+    // Check for "not found" indicators
+    if (aiResponse.includes("NO_CIN_FOUND") || 
+        aiResponse.toLowerCase().includes("not found") || 
+        aiResponse.toLowerCase().includes("unable to find") ||
+        aiResponse.toLowerCase().includes("could not find")) {
+      console.log(`[OpenAI Web Search] ❌ CIN not found via web search`);
       return { 
         cin: null, 
         confidence: "not_found", 
         rawResponse: aiResponse,
-        reason: "AI could not locate CIN in knowledge base"
+        reason: "Web search could not locate CIN",
+        sources: sources.map((s: any) => ({ url: s.url, title: s.title }))
       };
     }
 
@@ -123,30 +136,36 @@ Return only the 21-character CIN or "NO_CIN_FOUND" if you cannot locate it.`
     const cinMatch = aiResponse.match(/[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}/);
     
     if (cinMatch) {
-      console.log(`[OpenAI CIN Search] ✅ CIN Found: ${cinMatch[0]}`);
+      console.log(`[OpenAI Web Search] ✅ CIN Found: ${cinMatch[0]}`);
+      console.log(`[OpenAI Web Search] Found via ${sources.length} source(s)`);
+      
       return { 
         cin: cinMatch[0], 
         confidence: "high", 
-        rawResponse: aiResponse 
+        rawResponse: aiResponse,
+        reason: "Found via web search",
+        sources: sources.map((s: any) => ({ url: s.url, title: s.title })),
+        citations: citations.map((c: any) => ({ url: c.url, title: c.title }))
       };
     }
 
-    // AI responded but no valid CIN format detected
-    console.log(`[OpenAI CIN Search] ⚠️ AI responded but no valid CIN format found`);
+    // AI responded but no valid CIN format
+    console.log(`[OpenAI Web Search] ⚠️ AI responded but no valid CIN format found`);
     return { 
       cin: null, 
       confidence: "invalid_format", 
       rawResponse: aiResponse,
-      reason: "AI response did not contain valid CIN format"
+      reason: "Web search returned results but no valid CIN format detected",
+      sources: sources.map((s: any) => ({ url: s.url, title: s.title }))
     };
 
   } catch (error) {
-    console.error(`[OpenAI CIN Search] Exception:`, error);
+    console.error(`[OpenAI Web Search] Exception:`, error);
     return { 
       cin: null, 
       confidence: "error", 
       rawResponse: error instanceof Error ? error.message : String(error),
-      reason: "Exception during AI search"
+      reason: "Exception during web search"
     };
   }
 }
@@ -255,6 +274,7 @@ serve(async (req) => {
     let confidence: string;
     let rawResponse: string;
     let reason: string | undefined;
+    let sources: any[] | undefined; // Declare sources at function scope
     
     if (cinOverride && /^[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/.test(cinOverride)) {
       console.log(`✅ Using manually provided CIN: ${cinOverride}`);
@@ -262,6 +282,7 @@ serve(async (req) => {
       confidence = "manual";
       rawResponse = "Provided by user";
       reason = "Manual CIN provided by user";
+      sources = undefined; // No sources for manual entry
     } else {
       // Run AI search with OpenAI
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -276,9 +297,15 @@ serve(async (req) => {
       confidence = aiResult.confidence;
       rawResponse = aiResult.rawResponse;
       reason = aiResult.reason;
+      sources = aiResult.sources; // Extract sources for storage
+      
+      // Store sources for later use
+      if (sources && sources.length > 0) {
+        console.log(`[Main] AI consulted ${sources.length} web sources`);
+      }
     }
     
-    console.log('AI Search Result:', { cin, confidence, companyName, reason });
+    console.log('AI Search Result:', { cin, confidence, companyName, reason, sourcesCount: sources?.length || 0 });
     
     // Phase 3: Improved "CIN Not Found" Handling with Manual Review Path
     if (!cin) {
@@ -303,6 +330,7 @@ serve(async (req) => {
           ai_confidence: confidence, 
           raw_response: rawResponse,
           search_reason: reason,
+          web_search_sources: sources || [], // Store URLs consulted
           manual_review_required: true  // Flag for manual review queue
         }
       }).select().single();
