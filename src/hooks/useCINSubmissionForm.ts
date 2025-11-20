@@ -56,18 +56,50 @@ export const useCINSubmissionForm = () => {
 
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) { toast.error("Please fill in all required fields correctly"); return; }
+    console.log("[CIN] SubmitIdea form submit", formData);
+
+    if (!validateForm()) {
+      console.warn("[CIN] Validation failed", { formData, errors });
+      toast.error("Please fill in all required fields correctly");
+      return;
+    }
+
     setIsSubmitting(true);
     setErrors({});
+
     try {
-      const fbp = (window as any).fbq?.getPixelId ? `fb.1.${Date.now()}.${Math.random().toString(36).substring(7)}` : undefined;
-      const fbc = new URLSearchParams(window.location.search).get('fbclid') ? `fb.1.${Date.now()}.${new URLSearchParams(window.location.search).get('fbclid')}` : undefined;
-      if (typeof window !== 'undefined' && (window as any).fbq) (window as any).fbq('track', 'lead_step_1');
-      const { data, error } = await supabase.functions.invoke('validate-and-submit', { body: { ...formData, fbp, fbc } });
+      const fbp = (window as any).fbq?.getPixelId
+        ? `fb.1.${Date.now()}.${Math.random().toString(36).substring(7)}`
+        : undefined;
+      const fbcParam = new URLSearchParams(window.location.search).get("fbclid");
+      const fbc = fbcParam ? `fb.1.${Date.now()}.${fbcParam}` : undefined;
+
+      if (typeof window !== "undefined" && (window as any).fbq) {
+        (window as any).fbq("track", "lead_step_1");
+      }
+
+      console.log("[CIN] Invoking validate-and-submit", { body: { ...formData, fbp, fbc } });
+
+      const { data, error } = await supabase.functions.invoke("validate-and-submit", {
+        body: { ...formData, fbp, fbc },
+      });
+
+      console.log("[CIN] validate-and-submit response", { data, error });
+
       if (error) throw error;
-      if (data?.ok) navigate("/thank-you", { state: { leadType: data.leadType, verifiedCompanyName: data.verifiedCompanyName || formData.companyName } });
-      else throw new Error(data?.error || "Submission failed");
+
+      if (data?.ok) {
+        navigate("/thank-you", {
+          state: {
+            leadType: data.leadType,
+            verifiedCompanyName: data.verifiedCompanyName || formData.companyName,
+          },
+        });
+      } else {
+        throw new Error(data?.error || "Submission failed");
+      }
     } catch (error: any) {
+      console.error("[CIN] Submission error", error);
       setErrors({ submit: error.message || "Failed to submit application. Please try again." });
       toast.error("Failed to submit application. Please try again.");
     } finally {
