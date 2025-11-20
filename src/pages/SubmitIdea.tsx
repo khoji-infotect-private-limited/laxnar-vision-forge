@@ -73,30 +73,6 @@ const SubmitIdea = () => {
                 )}
               </div>
 
-              {/* CIN Override (Optional) */}
-              <div className="space-y-2">
-                <Label htmlFor="cinOverride" className="flex items-center gap-2">
-                  Company CIN 
-                  <span className="text-xs text-muted-foreground font-normal">(Optional - if you know it)</span>
-                </Label>
-                <Input
-                  id="cinOverride"
-                  name="cinOverride"
-                  type="text"
-                  placeholder="e.g., U72900KA2020PTC123456"
-                  value={formData.cinOverride || ''}
-                  onChange={handleChange}
-                  className={errors.cinOverride ? "border-destructive" : ""}
-                  maxLength={21}
-                />
-                {errors.cinOverride && (
-                  <p className="text-sm text-destructive">{errors.cinOverride}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Enter your 21-character CIN to skip AI verification
-                </p>
-              </div>
-
               {/* Founder Background */}
               <div className="space-y-2">
                 <Label htmlFor="founderBackground">Founder's Background *</Label>
