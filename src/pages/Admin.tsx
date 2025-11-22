@@ -137,10 +137,6 @@ const Admin = () => {
                     <TableHead>Founder Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
-                    <TableHead>CIN (AI Found)</TableHead>
-                    <TableHead>AI Confidence</TableHead>
-                    <TableHead>Lead Score</TableHead>
-                    <TableHead>Rejection Reason</TableHead>
                     <TableHead>Idea</TableHead>
                     <TableHead>Revenue Model</TableHead>
                     <TableHead>USP</TableHead>
@@ -156,26 +152,6 @@ const Admin = () => {
                       <TableCell>{lead.founder_name || '-'}</TableCell>
                       <TableCell>{lead.email}</TableCell>
                       <TableCell>{lead.phone}</TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {lead.cin_found_by_ai || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          lead.ai_search_confidence === 'high' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : lead.ai_search_confidence === 'medium'
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
-                          {lead.ai_search_confidence || 'N/A'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">{lead.lead_score || '-'}</span>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {lead.rejection_reason || '-'}
-                      </TableCell>
                       <TableCell className="max-w-xs truncate">
                         {lead.idea}
                       </TableCell>
@@ -201,7 +177,7 @@ const Admin = () => {
                   ))}
                   {leads.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                         No impure leads found
                       </TableCell>
                     </TableRow>
