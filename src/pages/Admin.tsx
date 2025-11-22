@@ -128,9 +128,10 @@ const Admin = () => {
 
         <Card>
           <CardContent className="p-0">
-            <ScrollArea className="h-[calc(100vh-200px)]">
-              <Table>
-                <TableHeader>
+            <ScrollArea className="h-[calc(100vh-200px)] w-full">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">S.No</TableHead>
                     <TableHead>Company Name</TableHead>
@@ -148,17 +149,17 @@ const Admin = () => {
                   {leads.map((lead, index) => (
                     <TableRow key={lead.id}>
                       <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>{lead.company_name || '-'}</TableCell>
-                      <TableCell>{lead.founder_name || '-'}</TableCell>
-                      <TableCell>{lead.email}</TableCell>
+                      <TableCell className="min-w-[150px]">{lead.company_name || '-'}</TableCell>
+                      <TableCell className="min-w-[150px]">{lead.founder_name || '-'}</TableCell>
+                      <TableCell className="min-w-[200px]">{lead.email}</TableCell>
                       <TableCell>{lead.phone}</TableCell>
-                      <TableCell className="max-w-xs truncate">
+                      <TableCell className="min-w-[300px] whitespace-normal">
                         {lead.idea}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">
+                      <TableCell className="min-w-[250px] whitespace-normal">
                         {lead.revenue_model}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">
+                      <TableCell className="min-w-[250px] whitespace-normal">
                         {lead.usp}
                       </TableCell>
                       <TableCell>
@@ -182,8 +183,9 @@ const Admin = () => {
                       </TableCell>
                     </TableRow>
                   )}
-                </TableBody>
-              </Table>
+                  </TableBody>
+                </Table>
+              </div>
             </ScrollArea>
           </CardContent>
         </Card>
