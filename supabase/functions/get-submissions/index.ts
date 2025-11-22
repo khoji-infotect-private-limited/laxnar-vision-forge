@@ -34,9 +34,9 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch all submissions
+    // Fetch all impure leads
     const { data: submissions, error } = await supabase
-      .from('submissions')
+      .from('impure_leads')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -48,7 +48,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[ADMIN] Successfully fetched ${submissions?.length || 0} submissions`);
+    console.log(`[ADMIN] Successfully fetched ${submissions?.length || 0} impure leads`);
 
     return new Response(
       JSON.stringify({ submissions }),
