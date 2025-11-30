@@ -189,8 +189,8 @@ const SubmitIdea = () => {
 
               {/* Submit Error */}
               {errors.submit && (
-                <div className="p-4 bg-destructive/10 border border-destructive rounded-md">
-                  <p className="text-sm text-destructive">{errors.submit}</p>
+                <div className="p-4 bg-muted border border-border rounded-md">
+                  <p className="text-sm text-foreground">{errors.submit}</p>
                 </div>
               )}
 
