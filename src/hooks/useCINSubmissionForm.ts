@@ -83,7 +83,7 @@ export const useCINSubmissionForm = () => {
       if (data?.validationFailed || data?.error === "spam_detected") {
         const errorMessage = data.message || "Your submission appears to contain invalid content. Please provide genuine business information.";
         setErrors({ submit: errorMessage });
-        toast.error(errorMessage, { duration: 6000 });
+        toast(errorMessage, { duration: 6000 });
         return;
       }
 
