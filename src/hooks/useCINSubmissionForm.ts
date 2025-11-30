@@ -79,6 +79,14 @@ export const useCINSubmissionForm = () => {
 
       if (error) throw error;
 
+      // Check for spam validation failure
+      if (data?.validationFailed || data?.error === "spam_detected") {
+        const errorMessage = data.message || "Your submission appears to contain invalid content. Please provide genuine business information.";
+        setErrors({ submit: errorMessage });
+        toast.error(errorMessage, { duration: 6000 });
+        return;
+      }
+
       if (data?.ok) {
         navigate("/thank-you", {
           state: {
@@ -91,8 +99,9 @@ export const useCINSubmissionForm = () => {
       }
     } catch (error: any) {
       console.error("[CIN] Submission error", error);
-      setErrors({ submit: error.message || "Failed to submit application. Please try again." });
-      toast.error("Failed to submit application. Please try again.");
+      const errorMessage = error.message || "Failed to submit application. Please try again.";
+      setErrors({ submit: errorMessage });
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

@@ -397,12 +397,14 @@ Respond with ONLY a JSON object in this exact format:
             console.log("Submission rejected as spam:", spamAnalysis.reason);
             return new Response(
               JSON.stringify({
-                error: "Submission validation failed",
-                message: "Your submission does not appear to describe a legitimate business or product. Please provide genuine business information.",
+                ok: false,
+                error: "spam_detected",
+                message: "Your submission does not appear to describe a legitimate business or product. Please provide genuine business information with meaningful details.",
                 details: spamAnalysis.reason,
+                validationFailed: true,
               }),
               {
-                status: 400,
+                status: 200,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
               }
             );
