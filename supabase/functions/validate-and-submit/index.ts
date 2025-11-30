@@ -328,6 +328,93 @@ serve(async (req) => {
       });
     }
 
+    // AI Spam Filter - Validate content legitimacy
+    console.log("Running AI spam filter...");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!lovableApiKey) {
+      console.error("LOVABLE_API_KEY not configured");
+      return new Response(JSON.stringify({ error: "AI validation not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    try {
+      const spamCheckPrompt = `Analyze the following startup submission and determine if it describes a REAL, LEGITIMATE business or product. Look for:
+- Coherent business idea that makes sense
+- Realistic revenue model
+- Clear unique selling proposition
+- Not random text, spam, or nonsense
+
+Submission Details:
+Business Idea: ${idea}
+Revenue Model: ${revenueModel}
+USP: ${usp}
+Company Name: ${companyName}
+Founder Background: ${founderBackground}
+
+Respond with ONLY a JSON object in this exact format:
+{
+  "isLegitimate": true or false,
+  "reason": "brief explanation",
+  "confidence": "high" or "medium" or "low"
+}`;
+
+      const spamCheckResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content: "You are a spam detection system. Analyze startup submissions and identify spam, nonsense, or fake entries. Be strict but fair. Real businesses should pass even if unconventional.",
+            },
+            { role: "user", content: spamCheckPrompt },
+          ],
+          temperature: 0.3,
+        }),
+      });
+
+      if (!spamCheckResponse.ok) {
+        console.error("AI spam check failed:", spamCheckResponse.status, await spamCheckResponse.text());
+        // If AI fails, allow submission to proceed (fail open)
+      } else {
+        const spamCheckData = await spamCheckResponse.json();
+        const aiContent = spamCheckData.choices?.[0]?.message?.content || "";
+        console.log("AI spam check raw response:", aiContent);
+
+        // Parse JSON from response
+        const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const spamAnalysis = JSON.parse(jsonMatch[0]);
+          console.log("AI spam analysis:", spamAnalysis);
+
+          if (!spamAnalysis.isLegitimate) {
+            console.log("Submission rejected as spam:", spamAnalysis.reason);
+            return new Response(
+              JSON.stringify({
+                error: "Submission validation failed",
+                message: "Your submission does not appear to describe a legitimate business or product. Please provide genuine business information.",
+                details: spamAnalysis.reason,
+              }),
+              {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              }
+            );
+          }
+          console.log("Submission passed AI spam filter");
+        }
+      }
+    } catch (spamCheckError) {
+      console.error("Error in AI spam check:", spamCheckError);
+      // Fail open - allow submission if spam check crashes
+    }
+
     await supabase
       .from("submissions")
       .insert({
