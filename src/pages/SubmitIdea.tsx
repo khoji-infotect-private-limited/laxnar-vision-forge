@@ -49,6 +49,7 @@ const SubmitIdea = () => {
                   placeholder="Acme Technologies Pvt Ltd"
                   value={formData.companyName}
                   onChange={handleChange}
+                  autoComplete="organization"
                   className={errors.companyName ? "border-destructive" : ""}
                 />
                 {errors.companyName && (
@@ -66,6 +67,7 @@ const SubmitIdea = () => {
                   placeholder="John Doe"
                   value={formData.founderName}
                   onChange={handleChange}
+                  autoComplete="name"
                   className={errors.founderName ? "border-destructive" : ""}
                 />
                 {errors.founderName && (
@@ -82,6 +84,7 @@ const SubmitIdea = () => {
                   placeholder="ex: Product manager, 7 yrs fintech"
                   value={formData.founderBackground}
                   onChange={handleChange}
+                  autoComplete="off"
                   className={errors.founderBackground ? "border-destructive" : ""}
                   rows={3}
                 />
@@ -100,6 +103,7 @@ const SubmitIdea = () => {
                   placeholder="ex: AI bookkeeping for SMBs"
                   value={formData.idea}
                   onChange={handleChange}
+                  autoComplete="off"
                   className={errors.idea ? "border-destructive" : ""}
                 />
                 {errors.idea && (
@@ -117,6 +121,7 @@ const SubmitIdea = () => {
                   placeholder="ex: Subscription"
                   value={formData.revenueModel}
                   onChange={handleChange}
+                  autoComplete="off"
                   className={errors.revenueModel ? "border-destructive" : ""}
                 />
                 {errors.revenueModel && (
@@ -133,6 +138,7 @@ const SubmitIdea = () => {
                   placeholder="ex: Automates GST filings"
                   value={formData.usp}
                   onChange={handleChange}
+                  autoComplete="off"
                   className={errors.usp ? "border-destructive" : ""}
                   rows={3}
                 />
@@ -151,6 +157,7 @@ const SubmitIdea = () => {
                   placeholder="founder@example.com"
                   value={formData.email}
                   onChange={handleChange}
+                  autoComplete="email"
                   className={errors.email ? "border-destructive" : ""}
                 />
                 {errors.email && (
@@ -169,6 +176,7 @@ const SubmitIdea = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   maxLength={10}
+                  autoComplete="tel"
                   className={errors.phone ? "border-destructive" : ""}
                 />
                 <p className="text-xs text-muted-foreground">
