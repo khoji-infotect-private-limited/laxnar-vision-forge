@@ -353,10 +353,15 @@ USP: ${usp}
 Company Name: ${companyName}
 Founder Background: ${founderBackground}
 
+If the submission is NOT legitimate, provide a helpful, constructive explanation that:
+1. Explains specifically what's wrong with their submission
+2. Gives actionable guidance on what they should provide instead
+3. Is friendly but firm in tone
+
 Respond with ONLY a JSON object in this exact format:
 {
   "isLegitimate": true or false,
-  "reason": "brief explanation",
+  "reason": "A helpful, personalized explanation addressing the specific issues in their submission and what they should do instead",
   "confidence": "high" or "medium" or "low"
 }`;
 
@@ -399,8 +404,7 @@ Respond with ONLY a JSON object in this exact format:
               JSON.stringify({
                 ok: false,
                 error: "spam_detected",
-                message: "Your submission does not appear to describe a legitimate business or product. Please provide genuine business information with meaningful details.",
-                details: spamAnalysis.reason,
+                message: spamAnalysis.reason,
                 validationFailed: true,
               }),
               {
