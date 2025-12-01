@@ -1,6 +1,3 @@
-// server.ts — Full working Deno file for Cashfree VRS v2 Verify CIN (Public Key flow)
-// NOTE: set required env vars before running/deploying.
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
@@ -23,218 +20,8 @@ function sha256Hex(input: string): Promise<string> {
   );
 }
 
-function normalizeName(s?: string): string {
-  if (!s) return "";
-  return s
-    .toLowerCase()
-    .replace(/\b(private\s+limited|pvt\.?\s*ltd\.?|ltd\.?|llc|inc\.?|corporation|corp\.?)\b/gi, "")
-    .replace(/[^\w\s]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function calculateSimilarity(str1: string, str2: string): number {
-  const s1 = normalizeName(str1);
-  const s2 = normalizeName(str2);
-  const len1 = s1.length,
-    len2 = s2.length;
-  const matrix: number[][] = [];
-  for (let i = 0; i <= len1; i++) matrix[i] = [i];
-  for (let j = 0; j <= len2; j++) matrix[0][j] = j;
-  for (let i = 1; i <= len1; i++) {
-    for (let j = 1; j <= len2; j++) {
-      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
-    }
-  }
-  const distance = matrix[len1][len2];
-  const maxLen = Math.max(len1, len2);
-  return maxLen === 0 ? 1 : 1 - distance / maxLen;
-}
-
-function isFounderInDirectors(
-  founderName: string,
-  directorDetails: any[],
-): { matched: boolean; matchedDirectorName: string | null } {
-  if (!directorDetails || !Array.isArray(directorDetails)) return { matched: false, matchedDirectorName: null };
-  const normalizedFounder = normalizeName(founderName);
-  const founderParts = normalizedFounder.split(/\s+/);
-  for (const director of directorDetails) {
-    const directorName = director?.name || director?.director_name || "";
-    const normalizedDirector = normalizeName(directorName);
-    const allPartsMatch = founderParts.every((part) => normalizedDirector.includes(part) && part.length > 0);
-    if (allPartsMatch) return { matched: true, matchedDirectorName: directorName };
-  }
-  return { matched: false, matchedDirectorName: null };
-}
-
 // -------------------------
-// Cashfree Public Key helpers (RSA-OAEP + base64)
-// -------------------------
-function pemToArrayBuffer(pem: string): ArrayBuffer {
-  const b64 = pem.replace(/-----(BEGIN|END)[\s\S]+?-----/g, "").replace(/\s+/g, "");
-  const binaryString = atob(b64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
-  return bytes.buffer;
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-
-async function rsaEncryptBase64(message: string, publicKeyPem: string) {
-  const spki = pemToArrayBuffer(publicKeyPem);
-  const key = await crypto.subtle.importKey("spki", spki, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
-  const data = new TextEncoder().encode(message);
-  const encrypted = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, key, data);
-  return arrayBufferToBase64(encrypted);
-}
-
-/**
- * verifyCINWithCashfree
- * - Builds message: clientId + "." + timestamp (seconds)
- * - Encrypts with Cashfree public key (RSA-OAEP SHA-256), base64
- * - Sends headers: x-client-id, x-client-secret, x-cf-timestamp, x-cf-signature
- * - Body: { verification_id, cin }
- */
-async function verifyCINWithCashfree(
-  cin: string,
-  cashfreeClientId: string,
-  cashfreeClientSecret: string,
-  cashfreePublicKeyPem: string,
-  useSandbox = true,
-) {
-  try {
-    // Basic validation
-    if (!cashfreeClientId) return { error: "missing_client_id", errorType: "config_error" };
-    if (!cashfreeClientSecret) return { error: "missing_client_secret", errorType: "config_error" };
-    if (!cashfreePublicKeyPem || !cashfreePublicKeyPem.includes("BEGIN PUBLIC KEY"))
-      return { error: "invalid_public_key_pem", errorType: "config_error" };
-
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const message = `${cashfreeClientId}.${timestamp}`; // correct per docs
-
-    // RSA-OAEP encrypt + base64
-    const signature = await rsaEncryptBase64(message, cashfreePublicKeyPem);
-
-    // Defensive check: base64 length of RSA-OAEP for 2048-bit key should be large (~300+)
-    if (!signature || signature.length < 200) {
-      console.error("[Cashfree] Signature too short — likely wrong key/algorithm/format.");
-      return { error: "signature_too_short", length: signature ? signature.length : 0, errorType: "config_error" };
-    }
-
-    const verificationId = `vrs_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const url = useSandbox
-      ? "https://sandbox.cashfree.com/verification/cin"
-      : "https://api.cashfree.com/verification/cin";
-
-    // Headers per docs (x-client-secret included)
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "x-client-id": cashfreeClientId,
-      "x-client-secret": cashfreeClientSecret,
-      "x-cf-timestamp": timestamp,
-      "x-cf-signature": signature,
-    };
-
-    // Masked debug logging (no keys printed fully)
-    console.log("[Cashfree] Sending verify-cin:", {
-      endpoint: useSandbox ? "sandbox" : "production",
-      verificationId,
-      sig_len: signature.length,
-      clientId_mask: cashfreeClientId.slice(0, 8) + "...",
-    });
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ verification_id: verificationId, cin }),
-    });
-
-    let responseBody: any;
-    try {
-      responseBody = await res.json();
-    } catch (err) {
-      responseBody = { raw: await res.text() };
-    }
-
-    console.log("[Cashfree] HTTP", res.status, "ok=", res.ok);
-    if (!res.ok) {
-      console.error(
-        "[Cashfree] Response (truncated):",
-        typeof responseBody === "object"
-          ? JSON.stringify(responseBody).slice(0, 800)
-          : String(responseBody).slice(0, 800),
-      );
-      return {
-        error: responseBody,
-        status: res.status,
-        errorType: "api_error",
-        errorMessage: responseBody?.message || responseBody?.error || "Unknown",
-      };
-    }
-
-    return responseBody;
-  } catch (error) {
-    console.error("[Cashfree] Exception:", error);
-    return { error: error instanceof Error ? error.message : String(error), errorType: "exception" };
-  }
-}
-
-// -------------------------
-// OpenAI helper (unchanged)
-// -------------------------
-async function findCINWithAI(companyName: string, founderName: string, openaiApiKey: string) {
-  try {
-    console.log(`[OpenAI Web Search] Starting search for: ${companyName}, Founder: ${founderName}`);
-    const searchQuery = `Find the Corporate Identification Number (CIN) for the Indian company "${companyName}" with founder/director ${founderName}. A CIN is a 21-character alphanumeric code in format [A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}. Return ONLY the exact 21-character CIN if found, or "NO_CIN_FOUND" if not available.`;
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${openaiApiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "gpt-5-mini", tools: [{ type: "web_search" }], input: searchQuery }),
-    });
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("[OpenAI] API error", response.status, err);
-      return { cin: null, confidence: "error", rawResponse: err, reason: `OpenAI status ${response.status}` };
-    }
-    const data = await response.json();
-    const outputItems = data.output || [];
-    const messageItem = outputItems.find((item: any) => item.type === "message");
-    if (!messageItem)
-      return { cin: null, confidence: "no_response", rawResponse: JSON.stringify(data), reason: "No message content" };
-    const textContent = messageItem.content?.find((c: any) => c.type === "output_text");
-    const aiResponse = textContent?.text?.trim() || "";
-    const cinMatch = aiResponse.match(/[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}/);
-    if (cinMatch)
-      return { cin: cinMatch[0], confidence: "high", rawResponse: aiResponse, reason: "Found via web search" };
-    if (aiResponse.toLowerCase().includes("not found") || aiResponse.includes("NO_CIN_FOUND")) {
-      return { cin: null, confidence: "not_found", rawResponse: aiResponse, reason: "AI indicates not found" };
-    }
-    return {
-      cin: null,
-      confidence: "invalid_format",
-      rawResponse: aiResponse,
-      reason: "AI responded but no valid CIN format",
-    };
-  } catch (error) {
-    console.error("[OpenAI] Exception", error);
-    return {
-      cin: null,
-      confidence: "error",
-      rawResponse: error instanceof Error ? error.message : String(error),
-      reason: "Exception",
-    };
-  }
-}
-
-// -------------------------
-// FB event helper (unchanged)
+// FB event helper
 // -------------------------
 async function sendFacebookEvent(eventName: string, email: string, phone: string, fbp?: string, fbc?: string) {
   try {
@@ -267,32 +54,7 @@ async function sendFacebookEvent(eventName: string, email: string, phone: string
 }
 
 // -------------------------
-// Optional startup test (set CASHFREE_RUN_TEST="true" to run once on cold start)
-// -------------------------
-async function runStartupTestIfRequested() {
-  const runTest = (Deno.env.get("CASHFREE_RUN_TEST") || "false").toLowerCase() === "true";
-  if (!runTest) return;
-  console.log("[StartupTest] Running quick Cashfree sandbox test (CASHFREE_RUN_TEST=true).");
-  const cfClientId = Deno.env.get("CASHFREE_CLIENT_ID")!;
-  const cfSecret = Deno.env.get("CASHFREE_CLIENT_SECRET")!;
-  const cfPubPem = Deno.env.get("CASHFREE_PUBLIC_KEY_PEM")!;
-  const cfUseSandbox = (Deno.env.get("CASHFREE_USE_SANDBOX") ?? "true").toLowerCase() !== "false";
-  if (!cfClientId || !cfSecret || !cfPubPem) {
-    console.error("[StartupTest] Missing Cashfree env vars; cannot run test.");
-    return;
-  }
-  try {
-    const testCIN = "U72900KA2020PTC123456";
-    const r = await verifyCINWithCashfree(testCIN, cfClientId, cfSecret, cfPubPem, cfUseSandbox);
-    console.log("[StartupTest] Cashfree test result (truncated):", JSON.stringify(r).slice(0, 800));
-  } catch (e) {
-    console.error("[StartupTest] Exception", e);
-  }
-}
-runStartupTestIfRequested().catch((e) => console.warn("[StartupTest] failed", e));
-
-// -------------------------
-// Main server handler (preserves your Supabase + AI/CIN flow)
+// Main server handler
 // -------------------------
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -311,7 +73,6 @@ serve(async (req) => {
       phone,
       fbp,
       fbc,
-      cinOverride,
     } = body;
 
     console.log("Parsed request data:", {
@@ -328,11 +89,11 @@ serve(async (req) => {
       });
     }
 
-    await supabase
+    // Store submission in database
+    const { data, error } = await supabase
       .from("submissions")
       .insert({
         company_name: companyName,
-        cin: cinOverride || "",
         founder_name: founderName,
         founder_background: founderBackground,
         idea,
@@ -340,247 +101,31 @@ serve(async (req) => {
         usp,
         email,
         phone,
-      });
+      })
+      .select()
+      .single();
 
-    // Determine CIN (manual override or AI)
-    let cin: string | null = null;
-    let confidence = "unknown";
-    let rawResponse = "";
-    let reason: string | undefined;
-    let sources: any[] | undefined;
-
-    if (cinOverride && /^[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/.test(cinOverride)) {
-      cin = cinOverride;
-      confidence = "manual";
-      rawResponse = "Provided by user";
-      reason = "Manual override";
-    } else {
-      const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-      if (!openaiApiKey)
-        return new Response(JSON.stringify({ error: "AI not configured" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      const aiRes = await findCINWithAI(companyName, founderName, openaiApiKey);
-      cin = aiRes.cin;
-      confidence = aiRes.confidence;
-      rawResponse = aiRes.rawResponse;
-      reason = aiRes.reason;
-      sources = aiRes.sources;
-    }
-
-    if (!cin) {
-      const { data } = await supabase
-        .from("impure_leads")
-        .insert({
-          company_name: companyName,
-          founder_name: founderName,
-          founder_background: founderBackground,
-          idea,
-          revenue_model: revenueModel,
-          usp,
-          email,
-          phone,
-          cin_found_by_ai: null,
-          ai_search_confidence: confidence,
-          ai_search_failed: true,
-          rejection_reason: `CIN not found: ${reason || "none"}`,
-          verification_error_details: { ai_confidence: confidence, raw_response: rawResponse, sources: sources || [] },
-        })
-        .select()
-        .single();
-      await sendFacebookEvent("Lead", email, phone, fbp, fbc);
-      return new Response(JSON.stringify({ ok: true, leadType: "impure", leadId: data.id, reason: "CIN not found" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Cashfree verification
-    const cfClientId = Deno.env.get("CASHFREE_CLIENT_ID")!;
-    const cfClientSecret = Deno.env.get("CASHFREE_CLIENT_SECRET") || "";
-    const cfPublicKeyPem = Deno.env.get("CASHFREE_PUBLIC_KEY_PEM")!;
-    const cfUseSandbox = (Deno.env.get("CASHFREE_USE_SANDBOX") ?? "true").toLowerCase() !== "false";
-
-    if (!cfClientId || !cfClientSecret || !cfPublicKeyPem) {
-      return new Response(JSON.stringify({ error: "Cashfree not configured" }), {
+    if (error) {
+      console.error("Database error:", error);
+      return new Response(JSON.stringify({ error: "Failed to save submission" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const verificationResult = await verifyCINWithCashfree(
-      cin,
-      cfClientId,
-      cfClientSecret,
-      cfPublicKeyPem,
-      cfUseSandbox,
+    // Send Facebook event
+    await sendFacebookEvent("Lead", email, phone, fbp, fbc);
+
+    console.log("Submission successful:", data.id);
+
+    return new Response(
+      JSON.stringify({ 
+        ok: true, 
+        submissionId: data.id,
+        message: "Submission received successfully"
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
-    // Handle config/signature errors separately (so ops can fix key/ids)
-    if (verificationResult && verificationResult.errorType === "config_error") {
-      const { data } = await supabase
-        .from("impure_leads")
-        .insert({
-          company_name: companyName,
-          founder_name: founderName,
-          founder_background: founderBackground,
-          idea,
-          revenue_model: revenueModel,
-          usp,
-          email,
-          phone,
-          cin_found_by_ai: cin,
-          ai_search_confidence: confidence,
-          rejection_reason: `Verification config error: ${verificationResult.error}`,
-          verification_error_details: verificationResult,
-        })
-        .select()
-        .single();
-      await sendFacebookEvent("lead_A", email, phone, fbp, fbc);
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          leadType: "impure",
-          leadId: data.id,
-          reason: "Verification config error",
-          details: verificationResult,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    if (verificationResult && verificationResult.error) {
-      const { data } = await supabase
-        .from("impure_leads")
-        .insert({
-          company_name: companyName,
-          founder_name: founderName,
-          founder_background: founderBackground,
-          idea,
-          revenue_model: revenueModel,
-          usp,
-          email,
-          phone,
-          cin_found_by_ai: cin,
-          ai_search_confidence: confidence,
-          rejection_reason: `Cashfree API error: ${verificationResult.errorMessage || JSON.stringify(verificationResult.error)}`,
-          verification_error_details: verificationResult,
-        })
-        .select()
-        .single();
-      await sendFacebookEvent("lead_A", email, phone, fbp, fbc);
-      return new Response(
-        JSON.stringify({ ok: true, leadType: "impure", leadId: data.id, reason: "Verification failed" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Normal verification success path
-    const companyData = verificationResult.company_details || verificationResult;
-    const verifiedCompanyName = companyData.company_name || "";
-    const companyStatus = (companyData.company_status || "").toString();
-    const directorDetails = companyData.directors || [];
-
-    if ((companyStatus || "").toLowerCase() !== "active") {
-      const { data } = await supabase
-        .from("impure_leads")
-        .insert({
-          company_name: companyName,
-          founder_name: founderName,
-          founder_background: founderBackground,
-          idea,
-          revenue_model: revenueModel,
-          usp,
-          email,
-          phone,
-          cin_found_by_ai: cin,
-          ai_search_confidence: confidence,
-          verified_company_name: verifiedCompanyName,
-          company_status: companyStatus,
-          director_details: directorDetails,
-          rejection_reason: `Company not active (${companyStatus})`,
-        })
-        .select()
-        .single();
-      await sendFacebookEvent("lead_A", email, phone, fbp, fbc);
-      return new Response(
-        JSON.stringify({ ok: true, leadType: "impure", leadId: data.id, reason: "Company not active" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const nameSimilarity = calculateSimilarity(companyName, verifiedCompanyName);
-    const { matched: directorMatch, matchedDirectorName } = isFounderInDirectors(founderName, directorDetails);
-    const isPure = nameSimilarity >= 0.8 && directorMatch;
-
-    if (isPure) {
-      const { data } = await supabase
-        .from("pure_conversions")
-        .insert({
-          company_name: companyName,
-          founder_name: founderName,
-          founder_background: founderBackground,
-          idea,
-          revenue_model: revenueModel,
-          usp,
-          email,
-          phone,
-          cin_found_by_ai: cin,
-          ai_search_confidence: confidence,
-          verified_company_name: verifiedCompanyName,
-          verification_id: verificationResult.verification_id,
-          reference_id: verificationResult.reference_id,
-          company_status: companyStatus,
-          cin_status: companyData.cin_status,
-          registration_number: companyData.registration_number,
-          incorporation_date: companyData.date_of_incorporation,
-          incorporation_country: companyData.country_of_incorporation,
-          director_details: directorDetails,
-          company_name_match_score: nameSimilarity,
-          director_name_match: directorMatch,
-          matched_director_name: matchedDirectorName,
-        })
-        .select()
-        .single();
-      await sendFacebookEvent("CompleteRegistration", email, phone, fbp, fbc);
-      return new Response(
-        JSON.stringify({ ok: true, accepted: true, leadType: "pure", leadId: data.id, verifiedCompanyName }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    } else {
-      const rejectionReasons = [];
-      if (nameSimilarity < 0.8)
-        rejectionReasons.push(`Name similarity too low (${(nameSimilarity * 100).toFixed(0)}% < 80%)`);
-      if (!directorMatch) rejectionReasons.push("Founder not found in director list");
-      const { data } = await supabase
-        .from("impure_leads")
-        .insert({
-          company_name: companyName,
-          founder_name: founderName,
-          founder_background: founderBackground,
-          idea,
-          revenue_model: revenueModel,
-          usp,
-          email,
-          phone,
-          cin_found_by_ai: cin,
-          ai_search_confidence: confidence,
-          verified_company_name: verifiedCompanyName,
-          verification_id: verificationResult.verification_id,
-          company_status: companyStatus,
-          director_details: directorDetails,
-          rejection_reason: rejectionReasons.join("; "),
-          company_name_match_score: nameSimilarity,
-          director_name_match: directorMatch,
-        })
-        .select()
-        .single();
-      await sendFacebookEvent("lead_A", email, phone, fbp, fbc);
-      return new Response(
-        JSON.stringify({ ok: true, leadType: "impure", leadId: data.id, reason: rejectionReasons.join("; ") }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
   } catch (error) {
     console.error("Unhandled exception in handler:", error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {

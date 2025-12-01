@@ -90,8 +90,8 @@ export const useCINSubmissionForm = () => {
       if (data?.ok) {
         navigate("/thank-you", {
           state: {
-            leadType: data.leadType,
-            verifiedCompanyName: data.verifiedCompanyName || formData.companyName,
+            companyName: formData.companyName,
+            submissionId: data.submissionId,
           },
         });
       } else {
