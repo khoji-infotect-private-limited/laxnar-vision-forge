@@ -6,16 +6,15 @@ import { CheckCircle, Home } from "lucide-react";
 const ThankYou = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const verifiedCompanyName = location.state?.verifiedCompanyName;
-  const leadType = location.state?.leadType || 'pure';
+  const companyName = location.state?.companyName;
+  const submissionId = location.state?.submissionId;
 
   useEffect(() => {
     window.scrollTo(0, 0);
     if (typeof window !== 'undefined' && (window as any).fbq) {
-      if (leadType === 'pure') (window as any).fbq('track', 'CompleteRegistration', { content_name: 'Pure Lead', value: 100, currency: 'USD' });
-      else (window as any).fbq('track', 'lead_A', { content_name: 'Impure Lead', value: 30, currency: 'USD' });
+      (window as any).fbq('track', 'Lead', { content_name: 'Submission', value: 50, currency: 'USD' });
     }
-  }, [leadType]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/5 flex items-center justify-center px-4">
@@ -23,8 +22,9 @@ const ThankYou = () => {
         <div className="flex justify-center"><CheckCircle className="w-24 h-24 text-primary animate-in zoom-in duration-500" /></div>
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <h1 className="text-4xl md:text-6xl font-bold">Application Received</h1>
-          {verifiedCompanyName && leadType === 'pure' && <p className="text-lg md:text-xl text-primary font-medium">{verifiedCompanyName} — Verified ✓</p>}
-          <p className="text-xl md:text-2xl text-muted-foreground">{leadType === 'pure' ? "Your company is verified. We'll review your idea and contact you within 48 hours." : "We've received your application. Our team will review it and get back to you soon."}</p>
+          {companyName && <p className="text-lg md:text-xl text-primary font-medium">{companyName}</p>}
+          <p className="text-xl md:text-2xl text-muted-foreground">We've received your application. Our team will review it and get back to you within 48 hours.</p>
+          {submissionId && <p className="text-sm text-muted-foreground">Reference ID: {submissionId.slice(0, 8)}</p>}
         </div>
         <Button onClick={() => navigate("/")} size="lg" className="gap-2"><Home className="w-4 h-4" />Back to Home</Button>
       </div>
