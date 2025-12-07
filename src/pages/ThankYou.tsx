@@ -11,9 +11,42 @@ const ThankYou = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    
+    // Facebook Pixel
     if (typeof window !== 'undefined' && (window as any).fbq) {
       (window as any).fbq('track', 'Lead', { content_name: 'Submission', value: 50, currency: 'USD' });
     }
+
+    // LinkedIn Insight Tag
+    const linkedInPartnerId = "8383492";
+    (window as any)._linkedin_data_partner_ids = (window as any)._linkedin_data_partner_ids || [];
+    (window as any)._linkedin_data_partner_ids.push(linkedInPartnerId);
+
+    if (!(window as any).lintrk) {
+      (window as any).lintrk = function(a: any, b: any) {
+        (window as any).lintrk.q.push([a, b]);
+      };
+      (window as any).lintrk.q = [];
+    }
+
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.async = true;
+    script.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
+    document.head.appendChild(script);
+
+    // Track conversion
+    if ((window as any).lintrk) {
+      (window as any).lintrk('track', { conversion_id: 21587876 });
+    }
+
+    return () => {
+      // Cleanup script on unmount
+      const existingScript = document.querySelector('script[src="https://snap.licdn.com/li.lms-analytics/insight.min.js"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
   }, []);
 
   return (
