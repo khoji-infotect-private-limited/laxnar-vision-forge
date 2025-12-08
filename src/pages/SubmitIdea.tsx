@@ -3,12 +3,28 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useCINSubmissionForm } from "@/hooks/useCINSubmissionForm";
+import { useBookCallForm } from "@/hooks/useBookCallForm";
+import { 
+  Shield, 
+  FileCheck, 
+  Phone, 
+  Handshake,
+  MessageCircle,
+  Search,
+  Rocket,
+  Lightbulb,
+  Users,
+  Zap,
+  Heart,
+  Clock,
+  UserCheck,
+  CheckCircle2,
+  ArrowRight
+} from "lucide-react";
 
 const SubmitIdea = () => {
-  const { formData, errors, isSubmitting, handleChange, handleContinue } = useCINSubmissionForm();
+  const { formData, errors, isSubmitting, handleChange, handleSubmit } = useBookCallForm();
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).fbq) {
@@ -16,145 +32,175 @@ const SubmitIdea = () => {
     }
   }, []);
 
+  const scrollToForm = () => {
+    document.getElementById('book-call-form')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <main className="flex-1 pt-20">
+      <main className="flex-1 pt-16">
         {/* Hero Section */}
-        <section className="py-12 px-4 text-center">
-          <div className="max-w-2xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Have a Startup Idea? We'll Build Your MVP.
+        <section className="py-16 md:py-24 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
+              We Help Early-Stage Founders Turn Ideas into MVPs
+              <span className="text-gradient block mt-2">— Without Upfront Development Cost</span>
             </h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              Join Laxnar — we build early-stage MVPs in exchange for 10–20% equity.
+            <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+              Laxnar is a venture studio that partners with founders to design, build, and launch tech products in exchange for equity — not invoices.
             </p>
-            <p className="text-sm font-medium text-primary mb-12">
-              Apply With Your Idea
+            <Button 
+              size="lg" 
+              onClick={scrollToForm}
+              className="text-lg px-8 py-6 h-auto group"
+            >
+              Book a Free 15-Minute Call
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </div>
+        </section>
+
+        {/* Trust & De-risk Section */}
+        <section className="py-12 px-4 border-y border-border/50">
+          <div className="max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="flex items-center gap-3 justify-center sm:justify-start">
+                <Shield className="h-5 w-5 text-primary flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">We don't take your idea — you own it</span>
+              </div>
+              <div className="flex items-center gap-3 justify-center sm:justify-start">
+                <FileCheck className="h-5 w-5 text-primary flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">NDA available if needed</span>
+              </div>
+              <div className="flex items-center gap-3 justify-center sm:justify-start">
+                <Phone className="h-5 w-5 text-primary flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">No obligation call</span>
+              </div>
+              <div className="flex items-center gap-3 justify-center sm:justify-start">
+                <Handshake className="h-5 w-5 text-primary flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">We only partner if there's a strong mutual fit</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works Section */}
+        <section className="py-16 md:py-20 px-4">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-12">
+              How It Works
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="glass-card p-6 text-center relative">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle className="h-6 w-6 text-primary" />
+                </div>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground">
+                  1
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Short Discovery Call</h3>
+                <p className="text-sm text-muted-foreground">
+                  A quick call to understand your idea, goals, and where you are in your journey.
+                </p>
+              </div>
+              <div className="glass-card p-6 text-center relative">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-6 w-6 text-primary" />
+                </div>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground">
+                  2
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Feasibility Review</h3>
+                <p className="text-sm text-muted-foreground">
+                  We assess scope, technical effort, and whether we can add real value.
+                </p>
+              </div>
+              <div className="glass-card p-6 text-center relative">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Rocket className="h-6 w-6 text-primary" />
+                </div>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground">
+                  3
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Build Together</h3>
+                <p className="text-sm text-muted-foreground">
+                  If aligned, we become long-term partners and build your product on an equity basis.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Ideal For Section */}
+        <section className="py-16 md:py-20 px-4 bg-secondary/30">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-4">
+              This Is a Good Fit If You…
+            </h2>
+            <p className="text-center text-muted-foreground mb-10 text-sm">
+              If this isn't a fit, we'll tell you honestly.
             </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-start gap-3 p-4 glass-card">
+                <Lightbulb className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-foreground">Have a startup idea but no tech team</span>
+              </div>
+              <div className="flex items-start gap-3 p-4 glass-card">
+                <Users className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-foreground">Are a non-technical or semi-technical founder</span>
+              </div>
+              <div className="flex items-start gap-3 p-4 glass-card">
+                <Zap className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-foreground">Want to move fast without burning cash</span>
+              </div>
+              <div className="flex items-start gap-3 p-4 glass-card">
+                <Heart className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-foreground">Are open to equity-based partnerships</span>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* Form Section */}
-        <section className="pb-20 px-4">
-          <div className="max-w-xl mx-auto">
-            <form onSubmit={handleContinue} className="space-y-6">
-              {/* Company Name */}
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name *</Label>
-                <Input
-                  id="companyName"
-                  name="companyName"
-                  type="text"
-                  placeholder="Acme Technologies Pvt Ltd"
-                  value={formData.companyName}
-                  onChange={handleChange}
-                  autoComplete="organization"
-                  className={errors.companyName ? "border-destructive" : ""}
-                />
-                {errors.companyName && (
-                  <p className="text-sm text-destructive">{errors.companyName}</p>
-                )}
-              </div>
+        <section id="book-call-form" className="py-16 md:py-20 px-4 scroll-mt-20">
+          <div className="max-w-md mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                Book Your Free 15-Minute Feasibility Call
+              </h2>
+              <p className="text-muted-foreground">
+                No pitching. No obligation. Just clarity.
+              </p>
+            </div>
 
-              {/* Founder Name */}
+            <form onSubmit={handleSubmit} className="glass-card p-6 md:p-8 space-y-5">
+              {/* Full Name */}
               <div className="space-y-2">
-                <Label htmlFor="founderName">Founder's Full Name *</Label>
+                <Label htmlFor="fullName">Full Name *</Label>
                 <Input
-                  id="founderName"
-                  name="founderName"
+                  id="fullName"
+                  name="fullName"
                   type="text"
                   placeholder="John Doe"
-                  value={formData.founderName}
+                  value={formData.fullName}
                   onChange={handleChange}
                   autoComplete="name"
-                  className={errors.founderName ? "border-destructive" : ""}
+                  className={errors.fullName ? "border-destructive" : ""}
                 />
-                {errors.founderName && (
-                  <p className="text-sm text-destructive">{errors.founderName}</p>
-                )}
-              </div>
-
-              {/* Founder Background */}
-              <div className="space-y-2">
-                <Label htmlFor="founderBackground">Founder's Background *</Label>
-                <Textarea
-                  id="founderBackground"
-                  name="founderBackground"
-                  placeholder="ex: Product manager, 7 yrs fintech"
-                  value={formData.founderBackground}
-                  onChange={handleChange}
-                  autoComplete="off"
-                  className={errors.founderBackground ? "border-destructive" : ""}
-                  rows={3}
-                />
-                {errors.founderBackground && (
-                  <p className="text-sm text-destructive">{errors.founderBackground}</p>
-                )}
-              </div>
-
-              {/* Business Idea */}
-              <div className="space-y-2">
-                <Label htmlFor="idea">One-line Business Idea *</Label>
-                <Input
-                  id="idea"
-                  name="idea"
-                  type="text"
-                  placeholder="ex: AI bookkeeping for SMBs"
-                  value={formData.idea}
-                  onChange={handleChange}
-                  autoComplete="off"
-                  className={errors.idea ? "border-destructive" : ""}
-                />
-                {errors.idea && (
-                  <p className="text-sm text-destructive">{errors.idea}</p>
-                )}
-              </div>
-
-              {/* Revenue Model */}
-              <div className="space-y-2">
-                <Label htmlFor="revenueModel">Revenue Model *</Label>
-                <Input
-                  id="revenueModel"
-                  name="revenueModel"
-                  type="text"
-                  placeholder="ex: Subscription"
-                  value={formData.revenueModel}
-                  onChange={handleChange}
-                  autoComplete="off"
-                  className={errors.revenueModel ? "border-destructive" : ""}
-                />
-                {errors.revenueModel && (
-                  <p className="text-sm text-destructive">{errors.revenueModel}</p>
-                )}
-              </div>
-
-              {/* USP */}
-              <div className="space-y-2">
-                <Label htmlFor="usp">USP (Unique Selling Point) *</Label>
-                <Textarea
-                  id="usp"
-                  name="usp"
-                  placeholder="ex: Automates GST filings"
-                  value={formData.usp}
-                  onChange={handleChange}
-                  autoComplete="off"
-                  className={errors.usp ? "border-destructive" : ""}
-                  rows={3}
-                />
-                {errors.usp && (
-                  <p className="text-sm text-destructive">{errors.usp}</p>
+                {errors.fullName && (
+                  <p className="text-sm text-destructive">{errors.fullName}</p>
                 )}
               </div>
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address *</Label>
+                <Label htmlFor="email">Email *</Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="founder@example.com"
+                  placeholder="you@example.com"
                   value={formData.email}
                   onChange={handleChange}
                   autoComplete="email"
@@ -165,32 +211,45 @@ const SubmitIdea = () => {
                 )}
               </div>
 
-              {/* Phone */}
+              {/* LinkedIn or Company */}
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label htmlFor="linkedinOrCompany">LinkedIn Profile or Company Name *</Label>
                 <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  placeholder="9876543210"
-                  value={formData.phone}
+                  id="linkedinOrCompany"
+                  name="linkedinOrCompany"
+                  type="text"
+                  placeholder="linkedin.com/in/johndoe or Acme Inc"
+                  value={formData.linkedinOrCompany}
                   onChange={handleChange}
-                  maxLength={10}
-                  autoComplete="tel"
-                  className={errors.phone ? "border-destructive" : ""}
+                  autoComplete="organization"
+                  className={errors.linkedinOrCompany ? "border-destructive" : ""}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Enter 10-digit mobile number without country code
-                </p>
-                {errors.phone && (
-                  <p className="text-sm text-destructive">{errors.phone}</p>
+                {errors.linkedinOrCompany && (
+                  <p className="text-sm text-destructive">{errors.linkedinOrCompany}</p>
                 )}
+              </div>
+
+              {/* Optional Idea One-liner */}
+              <div className="space-y-2">
+                <Label htmlFor="ideaOneLiner">
+                  In one line, what are you building? 
+                  <span className="text-muted-foreground ml-1">(optional)</span>
+                </Label>
+                <Input
+                  id="ideaOneLiner"
+                  name="ideaOneLiner"
+                  type="text"
+                  placeholder="e.g., AI-powered expense tracker for freelancers"
+                  value={formData.ideaOneLiner}
+                  onChange={handleChange}
+                  autoComplete="off"
+                />
               </div>
 
               {/* Submit Error */}
               {errors.submit && (
-                <div className="p-4 bg-muted border border-border rounded-md">
-                  <p className="text-sm text-foreground">{errors.submit}</p>
+                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+                  <p className="text-sm text-destructive">{errors.submit}</p>
                 </div>
               )}
 
@@ -198,25 +257,70 @@ const SubmitIdea = () => {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full"
+                className="w-full text-base"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Submitting..." : "Submit Application"}
+                {isSubmitting ? "Scheduling..." : "Schedule Free Call"}
               </Button>
-            </form>
 
-            {/* Trust Line */}
-            <div className="mt-8 text-center space-y-4">
-              <p className="text-sm text-muted-foreground">
-                We only accept Registered Private Limited companies. No upfront fees — equity-based support (10–20%).
+              <p className="text-xs text-center text-muted-foreground pt-2">
+                No pitching. No obligation. Just clarity.
               </p>
-              <p className="text-xs text-muted-foreground">
-                By applying you agree to our{" "}
-                <a href="/terms" className="underline hover:text-foreground">Terms</a>
-                {" & "}
-                <a href="/privacy" className="underline hover:text-foreground">Privacy</a>
-              </p>
+            </form>
+          </div>
+        </section>
+
+        {/* What Happens Next Section */}
+        <section className="py-16 md:py-20 px-4 border-t border-border/50">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-10">
+              What Happens Next?
+            </h2>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 p-4">
+                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Clock className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">We'll review your details within 24 hours</h3>
+                  <p className="text-sm text-muted-foreground">Quick turnaround so you're not left waiting.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-4">
+                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <UserCheck className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">You'll speak directly with a venture partner</h3>
+                  <p className="text-sm text-muted-foreground">Not a sales rep — someone who understands building products.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-4">
+                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">If there's a fit, we explain next steps clearly</h3>
+                  <p className="text-sm text-muted-foreground">No pressure, no hidden agendas — just honest conversation.</p>
+                </div>
+              </div>
             </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="py-16 px-4 text-center">
+          <div className="max-w-xl mx-auto">
+            <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-4">
+              Ready to explore if we're a fit?
+            </h2>
+            <Button 
+              size="lg" 
+              onClick={scrollToForm}
+              className="text-base px-8"
+            >
+              Book Your Free Call
+            </Button>
           </div>
         </section>
       </main>
