@@ -211,6 +211,24 @@ const SubmitIdea = () => {
                 )}
               </div>
 
+              {/* Phone */}
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number *</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="9876543210"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  autoComplete="tel"
+                  className={errors.phone ? "border-destructive" : ""}
+                />
+                {errors.phone && (
+                  <p className="text-sm text-destructive">{errors.phone}</p>
+                )}
+              </div>
+
               {/* LinkedIn or Company */}
               <div className="space-y-2">
                 <Label htmlFor="linkedinOrCompany">LinkedIn Profile or Company Name *</Label>

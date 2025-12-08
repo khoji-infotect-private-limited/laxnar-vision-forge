@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface BookCallFormData {
   fullName: string;
   email: string;
+  phone: string;
   linkedinOrCompany: string;
   ideaOneLiner: string;
 }
@@ -17,6 +18,7 @@ export const useBookCallForm = () => {
   const [formData, setFormData] = useState<BookCallFormData>({
     fullName: "",
     email: "",
+    phone: "",
     linkedinOrCompany: "",
     ideaOneLiner: "",
   });
@@ -34,6 +36,8 @@ export const useBookCallForm = () => {
     if (!formData.fullName.trim()) newErrors.fullName = "Name is required";
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Invalid email format";
+    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
+    else if (!/^[0-9]{10}$/.test(formData.phone.replace(/\D/g, ''))) newErrors.phone = "Enter a valid 10-digit phone number";
     if (!formData.linkedinOrCompany.trim()) newErrors.linkedinOrCompany = "LinkedIn profile or company name is required";
     
     setErrors(newErrors);
@@ -73,7 +77,7 @@ export const useBookCallForm = () => {
         revenueModel: "TBD",
         usp: "TBD",
         email: formData.email,
-        phone: "0000000000", // Placeholder for simplified form
+        phone: formData.phone.replace(/\D/g, ''),
         fbp,
         fbc,
       };
