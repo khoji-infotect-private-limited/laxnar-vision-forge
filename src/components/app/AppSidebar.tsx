@@ -131,20 +131,115 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
+      {/* Desktop Sidebar - always visible */}
+      <aside className="hidden lg:flex fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border flex-col lg:static">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <Link to="/" className="flex items-center gap-2">
+            <motion.div
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            >
+              <Sparkles className="h-6 w-6 text-primary" />
+            </motion.div>
+            <span className="font-bold text-lg">PRISM</span>
+          </Link>
+        </div>
+
+        {/* Navigation */}
+        <ScrollArea className="flex-1 p-4">
+          <nav className="space-y-4">
+            {/* Main */}
+            <NavSection title="Model" icon={<Cpu className="h-4 w-4" />}>
+              <NavItem
+                to="/app/chat"
+                icon={<MessageSquare className="h-4 w-4" />}
+                label="Chat"
+                isActive={isActive("/app/chat") || isActive("/app")}
+              />
+            </NavSection>
+
+            {/* Knowledge */}
+            <NavSection title="Knowledge" icon={<BookOpen className="h-4 w-4" />}>
+              <NavItem
+                to="/app/bundles"
+                icon={<Package className="h-4 w-4" />}
+                label="Bundles"
+                isActive={isActive("/app/bundles")}
+              />
+              <NavItem
+                to="/app/datasets"
+                icon={<Database className="h-4 w-4" />}
+                label="Dataset Packs"
+                isActive={isActive("/app/datasets")}
+              />
+            </NavSection>
+
+            {/* Downloads */}
+            <NavSection title="Downloads" icon={<Download className="h-4 w-4" />} defaultOpen={false}>
+              <NavItem
+                to="/app/marketplace"
+                icon={<Store className="h-4 w-4" />}
+                label="Marketplace"
+                isActive={isActive("/app/marketplace")}
+              />
+              <NavItem
+                to="/app/rooms"
+                icon={<Users className="h-4 w-4" />}
+                label="Community Rooms"
+                isActive={isActive("/app/rooms")}
+              />
+            </NavSection>
+
+            {/* Advanced */}
+            <NavSection title="Advanced" icon={<Sliders className="h-4 w-4" />} defaultOpen={false}>
+              <NavItem
+                to="/app/jobs"
+                icon={<Briefcase className="h-4 w-4" />}
+                label="Jobs"
+                isActive={isActive("/app/jobs")}
+              />
+              <NavItem
+                to="/app/competitions"
+                icon={<Trophy className="h-4 w-4" />}
+                label="Competitions"
+                isActive={isActive("/app/competitions")}
+              />
+              <NavItem
+                to="/app/settings"
+                icon={<Settings className="h-4 w-4" />}
+                label="Settings"
+                isActive={isActive("/app/settings")}
+              />
+            </NavSection>
+          </nav>
+        </ScrollArea>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-border">
+          <motion.div whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-muted-foreground hover:text-foreground"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </motion.div>
+        </div>
+      </aside>
+
+      {/* Mobile Sidebar - animated */}
       <AnimatePresence mode="wait">
-        <motion.aside
-          initial={{ x: "-100%" }}
-          animate={{ x: isOpen ? 0 : "-100%" }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className={cn(
-            "fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border flex flex-col lg:translate-x-0 lg:static",
-            "lg:animate-none"
-          )}
-          style={{ 
-            transform: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'translateX(0)' : undefined 
-          }}
-        >
+        {isOpen && (
+          <motion.aside
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border flex flex-col lg:hidden"
+          >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
             <Link to="/" className="flex items-center gap-2">
@@ -257,6 +352,7 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
             </motion.div>
           </div>
         </motion.aside>
+        )}
       </AnimatePresence>
     </>
   );
