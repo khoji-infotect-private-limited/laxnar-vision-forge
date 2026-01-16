@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.pack-ensure]
 verify_jwt = false
+
+[functions.pack-status]
+verify_jwt = false
