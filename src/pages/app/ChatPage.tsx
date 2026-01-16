@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { sendChatMessage } from "@/lib/chat";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -96,7 +97,7 @@ export default function ChatPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !user) return;
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -109,43 +110,44 @@ export default function ChatPage() {
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response with mock retrievals
-    setTimeout(() => {
-      const mockRetrievals: Retrieval[] = selectedBundle ? [
-        {
-          id: "ret-1",
-          passage: "Knowledge bundles provide deterministic retrieval by storing pre-computed embeddings locally. This ensures consistent results across queries.",
-          score: 0.89,
-          source: "bundle://prism-docs/architecture.md"
-        },
-        {
-          id: "ret-2",
-          passage: "The PRISM system uses SQLite FTS for full-text search on web platforms, providing fast local-first search without network dependencies.",
-          score: 0.76,
-          source: "bundle://prism-docs/local-search.md"
-        },
-        {
-          id: "ret-3",
-          passage: "Energy-based reranking computes relevance scores using learned energy functions, improving retrieval precision without additional model calls.",
-          score: 0.68,
-          source: "bundle://prism-docs/reranking.md"
-        }
-      ] : [];
+    try {
+      // Build message history for context
+      const messageHistory = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+      messageHistory.push({ role: "user", content: userMessage.content });
+
+      // Call the chat API
+      const response = await sendChatMessage(
+        messageHistory,
+        selectedModel,
+        selectedBundle,
+        user.id
+      );
 
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: selectedBundle 
-          ? `Based on the retrieved passages from your active bundle, I can explain that PRISM uses a deterministic propagation approach for knowledge retrieval. The system stores pre-computed embeddings locally in knowledge bundles, which enables consistent and reproducible results.\n\nThe web version leverages SQLite FTS (Full-Text Search) for efficient local-first search, while native platforms can use the full energy-based reranking system for enhanced precision.\n\nWould you like me to elaborate on any specific aspect of the PRISM architecture?`
-          : `I notice you don't have an active knowledge bundle selected. For the best experience with PRISM, I recommend:\n\n1. **Import a bundle** - Upload PDF, DOCX, or TXT files to create a custom knowledge bundle\n2. **Download a dataset pack** - Choose from MS MARCO, BEIR SciFact, or other research datasets\n\nOnce you have an active bundle, I'll be able to retrieve relevant passages and provide grounded responses based on your knowledge base.`,
-        retrievals: mockRetrievals.length > 0 ? mockRetrievals : undefined,
+        content: response.content,
+        retrievals: response.retrievals.length > 0 ? response.retrievals : undefined,
         model: MODELS.find(m => m.id === selectedModel)?.name,
         timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      // Add error message
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "I apologize, but I encountered an error. Please try again.",
+        timestamp: new Date(),
+      }]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const toggleRetrievals = (messageId: string) => {
