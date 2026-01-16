@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { sendChatMessage } from "@/lib/chat";
+import { messageBubble, staggerContainerFast, fadeInUp } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -89,7 +91,6 @@ export default function ChatPage() {
     
     if (data) {
       setBundles(data);
-      // Set first bundle as active if available
       const activeBundle = data.find(b => b.kind === "dataset_pack") || data[0];
       if (activeBundle) setSelectedBundle(activeBundle.id);
     }
@@ -111,14 +112,12 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      // Build message history for context
       const messageHistory = messages.map(m => ({
         role: m.role,
         content: m.content,
       }));
       messageHistory.push({ role: "user", content: userMessage.content });
 
-      // Call the chat API
       const response = await sendChatMessage(
         messageHistory,
         selectedModel,
@@ -138,7 +137,6 @@ export default function ChatPage() {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Chat error:", error);
-      // Add error message
       setMessages(prev => [...prev, {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -163,11 +161,26 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex flex-col">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="h-[calc(100vh-3.5rem)] flex flex-col"
+    >
       {/* Controls bar */}
-      <div className="border-b border-border p-4 flex flex-wrap gap-4 items-center bg-muted/30">
+      <motion.div 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className="border-b border-border p-4 flex flex-wrap gap-4 items-center bg-muted/30"
+      >
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
+          <motion.div
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          >
+            <Sparkles className="h-4 w-4 text-primary" />
+          </motion.div>
           <span className="text-sm font-medium">Model:</span>
           <Select value={selectedModel} onValueChange={setSelectedModel}>
             <SelectTrigger className="w-[180px]">
@@ -209,113 +222,173 @@ export default function ChatPage() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </motion.div>
 
       {/* Messages area */}
       <ScrollArea ref={scrollRef} className="flex-1 p-4">
         <div className="max-w-3xl mx-auto space-y-6">
-          {messages.length === 0 && (
-            <div className="text-center py-12">
-              <Sparkles className="h-12 w-12 text-primary/50 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Welcome to PRISM Chat</h2>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Start a conversation to explore your knowledge bundles. 
-                Retrieved passages will appear alongside responses for full transparency.
-              </p>
-            </div>
-          )}
-
-          {messages.map(message => (
-            <div key={message.id} className="space-y-2">
-              <div
-                className={cn(
-                  "flex gap-3",
-                  message.role === "user" ? "justify-end" : "justify-start"
-                )}
+          <AnimatePresence mode="popLayout">
+            {messages.length === 0 && (
+              <motion.div 
+                key="empty-state"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="text-center py-12"
               >
-                {message.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Bot className="h-4 w-4 text-primary" />
-                  </div>
-                )}
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, -5, 0]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Sparkles className="h-12 w-12 text-primary/50 mx-auto mb-4" />
+                </motion.div>
+                <h2 className="text-xl font-semibold mb-2">Welcome to PRISM Chat</h2>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Start a conversation to explore your knowledge bundles. 
+                  Retrieved passages will appear alongside responses for full transparency.
+                </p>
+              </motion.div>
+            )}
+
+            {messages.map((message, index) => (
+              <motion.div 
+                key={message.id}
+                variants={messageBubble}
+                initial="hidden"
+                animate="visible"
+                layout
+                className="space-y-2"
+              >
                 <div
                   className={cn(
-                    "rounded-lg px-4 py-3 max-w-[80%]",
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
+                    "flex gap-3",
+                    message.role === "user" ? "justify-end" : "justify-start"
                   )}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                  {message.model && (
-                    <p className="text-xs opacity-70 mt-2">{message.model}</p>
+                  {message.role === "assistant" && (
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 500, delay: 0.1 }}
+                      className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0"
+                    >
+                      <Bot className="h-4 w-4 text-primary" />
+                    </motion.div>
+                  )}
+                  <motion.div
+                    initial={{ opacity: 0, x: message.role === "user" ? 20 : -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className={cn(
+                      "rounded-lg px-4 py-3 max-w-[80%]",
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    )}
+                  >
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    {message.model && (
+                      <p className="text-xs opacity-70 mt-2">{message.model}</p>
+                    )}
+                  </motion.div>
+                  {message.role === "user" && (
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 500, delay: 0.1 }}
+                      className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0"
+                    >
+                      <User className="h-4 w-4" />
+                    </motion.div>
                   )}
                 </div>
-                {message.role === "user" && (
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <User className="h-4 w-4" />
-                  </div>
-                )}
-              </div>
 
-              {/* Retrievals panel */}
-              {message.retrievals && message.retrievals.length > 0 && (
-                <Collapsible
-                  open={expandedRetrievals.has(message.id)}
-                  onOpenChange={() => toggleRetrievals(message.id)}
-                >
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="ml-11 text-muted-foreground"
-                    >
-                      {expandedRetrievals.has(message.id) ? (
-                        <ChevronDown className="h-4 w-4 mr-1" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 mr-1" />
-                      )}
-                      {message.retrievals.length} retrieved passages
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="ml-11 mt-2 space-y-2">
-                    {message.retrievals.map(retrieval => (
-                      <Card
-                        key={retrieval.id}
-                        className="p-3 bg-card/50 border-border/50"
+                {/* Retrievals panel */}
+                {message.retrievals && message.retrievals.length > 0 && (
+                  <Collapsible
+                    open={expandedRetrievals.has(message.id)}
+                    onOpenChange={() => toggleRetrievals(message.id)}
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-11 text-muted-foreground"
                       >
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <code className="text-xs text-muted-foreground truncate">
-                            {retrieval.source}
-                          </code>
-                          <span className="text-xs font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
-                            {(retrieval.score * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                        <p className="text-sm">{retrieval.passage}</p>
-                      </Card>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-            </div>
-          ))}
+                        <motion.div
+                          animate={{ rotate: expandedRetrievals.has(message.id) ? 90 : 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ChevronRight className="h-4 w-4 mr-1" />
+                        </motion.div>
+                        {message.retrievals.length} retrieved passages
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <motion.div 
+                        initial="hidden"
+                        animate="visible"
+                        variants={staggerContainerFast}
+                        className="ml-11 mt-2 space-y-2"
+                      >
+                        {message.retrievals.map((retrieval, i) => (
+                          <motion.div
+                            key={retrieval.id}
+                            variants={fadeInUp}
+                          >
+                            <Card className="p-3 bg-card/50 border-border/50">
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <code className="text-xs text-muted-foreground truncate">
+                                  {retrieval.source}
+                                </code>
+                                <span className="text-xs font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
+                                  {(retrieval.score * 100).toFixed(0)}%
+                                </span>
+                              </div>
+                              <p className="text-sm">{retrieval.passage}</p>
+                            </Card>
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
           {isLoading && (
-            <div className="flex gap-3">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex gap-3"
+            >
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <Bot className="h-4 w-4 text-primary" />
               </div>
               <div className="bg-muted rounded-lg px-4 py-3">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <Loader2 className="h-5 w-5 text-muted-foreground" />
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </ScrollArea>
 
       {/* Input area */}
-      <div className="border-t border-border p-4 bg-card/50">
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="border-t border-border p-4 bg-card/50"
+      >
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex gap-2">
           <Textarea
             value={input}
@@ -329,15 +402,17 @@ export default function ChatPage() {
               }
             }}
           />
-          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button type="submit" size="icon" disabled={isLoading || !input.trim()} className="h-[60px] w-[60px]">
+              <Send className="h-4 w-4" />
+            </Button>
+          </motion.div>
         </form>
         <p className="text-xs text-muted-foreground text-center mt-2">
           <Info className="h-3 w-3 inline mr-1" />
           Responses are grounded in your active knowledge bundle. All retrieval happens locally.
         </p>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

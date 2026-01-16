@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Outlet, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { AppSidebar, SidebarToggle } from "./AppSidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Sparkles, User, Settings, LogOut, FileText } from "lucide-react";
+import { Sparkles, Settings, LogOut, FileText } from "lucide-react";
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -25,32 +26,45 @@ export function AppLayout() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card/50 backdrop-blur-sm sticky top-0 z-30">
+        <motion.header 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="h-14 border-b border-border flex items-center justify-between px-4 bg-card/50 backdrop-blur-sm sticky top-0 z-30"
+        >
           <div className="flex items-center gap-4">
             <SidebarToggle onClick={() => setSidebarOpen(true)} />
             <Link to="/" className="flex items-center gap-2 lg:hidden">
-              <Sparkles className="h-5 w-5 text-primary" />
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              >
+                <Sparkles className="h-5 w-5 text-primary" />
+              </motion.div>
               <span className="font-bold">PRISM</span>
             </Link>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/docs">
-                <FileText className="h-4 w-4 mr-2" />
-                Docs
-              </Link>
-            </Button>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/docs">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Docs
+                </Link>
+              </Button>
+            </motion.div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </motion.div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <div className="px-2 py-1.5 text-sm text-muted-foreground">
@@ -71,11 +85,17 @@ export function AppLayout() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </header>
+        </motion.header>
 
         {/* Main content */}
         <main className="flex-1 overflow-auto">
-          <Outlet />
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Outlet />
+          </motion.div>
         </main>
       </div>
     </div>
