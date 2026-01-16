@@ -10,6 +10,7 @@ import { AppLayout } from "@/components/app/AppLayout";
 // Public pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import DocsPage from "./pages/DocsPage";
 import Projects from "./pages/Projects";
 import HerSafeZone from "./pages/HerSafeZone";
 import Landing from "./pages/Landing";
@@ -43,6 +44,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/docs" element={<DocsPage />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/hersafezone" element={<HerSafeZone />} />
             <Route path="/landing" element={<Landing />} />
