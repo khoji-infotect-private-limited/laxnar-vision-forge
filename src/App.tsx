@@ -43,7 +43,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<SemanticResonator />} />
+            <Route path="/prism" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/docs" element={<DocsPage />} />
             <Route path="/projects" element={<Projects />} />
@@ -52,7 +53,7 @@ const App = () => (
             <Route path="/submit-idea" element={<SubmitIdea />} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/admin" element={<Admin />} />
-            <Route path="/semantic-resonator" element={<SemanticResonator />} />
+            <Route path="/semantic-resonator" element={<Navigate to="/" replace />} />
 
             {/* Protected app routes */}
             <Route
