@@ -18,6 +18,7 @@ import SubmitIdea from "./pages/SubmitIdea";
 import ThankYou from "./pages/ThankYou";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import SemanticResonator from "./pages/SemanticResonator";
 import ReptileCursor from "./components/ReptileCursor";
 
 // App pages
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/submit-idea" element={<SubmitIdea />} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/semantic-resonator" element={<SemanticResonator />} />
 
             {/* Protected app routes */}
             <Route
