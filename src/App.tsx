@@ -19,6 +19,7 @@ import ThankYou from "./pages/ThankYou";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import SemanticResonator from "./pages/SemanticResonator";
+import WhatsAppRedirect from "./pages/WhatsAppRedirect";
 import ReptileCursor from "./components/ReptileCursor";
 
 // App pages
@@ -50,6 +51,8 @@ const App = () => (
             <Route path="/projects" element={<Projects />} />
             <Route path="/hersafezone" element={<HerSafeZone />} />
             <Route path="/landing" element={<Landing />} />
+            <Route path="/wa" element={<WhatsAppRedirect />} />
+            <Route path="/whatsapp" element={<WhatsAppRedirect />} />
             <Route path="/submit-idea" element={<SubmitIdea />} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/admin" element={<Admin />} />
