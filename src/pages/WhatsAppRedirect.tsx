@@ -78,8 +78,6 @@ const WhatsAppRedirect = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[hsl(220,60%,6%)] via-[hsl(220,50%,10%)] to-[hsl(220,60%,6%)] flex flex-col items-center justify-between px-4 py-10 text-white overflow-hidden">
-      {/* Top spacer */}
-      <div />
 
       {/* Greeting animation */}
       <div className="flex-1 flex flex-col items-center justify-center gap-2 my-8">
