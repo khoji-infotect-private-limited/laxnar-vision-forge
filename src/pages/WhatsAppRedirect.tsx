@@ -3,7 +3,7 @@ import { MessageCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 
-const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=919140982008";
+const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=919140982008&text=Hello%2C%20Can%20you%20help%20me%20in%20making%20my%20idea%20into%20reality%3F";
 const COUNTDOWN_MS = 3500;
 const TICK_INTERVAL = 50;
 
