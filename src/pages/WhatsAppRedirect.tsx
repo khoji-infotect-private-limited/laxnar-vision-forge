@@ -1,106 +1,157 @@
-import { useEffect, useState } from "react";
-import { Globe, Smartphone, Brain, MessageCircle, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState, useRef } from "react";
+import { MessageCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=919140982008";
-const COUNTDOWN_SECONDS = 5;
+const COUNTDOWN_MS = 3500;
+const TICK_INTERVAL = 50;
 
-const services = [
-  {
-    icon: Globe,
-    title: "Web Development",
-    desc: "Modern, responsive websites & web apps built with cutting-edge AI tools.",
-  },
-  {
-    icon: Smartphone,
-    title: "Android Apps",
-    desc: "Native Android applications from MVP to production-ready, powered by AI.",
-  },
-  {
-    icon: Brain,
-    title: "AI Solutions",
-    desc: "Custom machine learning models, NLP, computer vision & predictive analytics.",
-  },
+const greetings = [
+  { text: "Namaste 🙏", lang: "Hindi" },
+  { text: "Welcome", lang: "English" },
+  { text: "नमस्ते", lang: "हिन्दी" },
+  { text: "স্বাগতম", lang: "বাংলা" },
+  { text: "நல்வரவு", lang: "தமிழ்" },
+  { text: "स्वागतम्", lang: "संस्कृतम्" },
+  { text: "સ્વાગત છે", lang: "ગુજરાતી" },
+  { text: "ಸ್ವಾಗತ", lang: "ಕನ್ನಡ" },
+  { text: "സ്വാഗതം", lang: "മലയാളം" },
+  { text: "ସ୍ୱାଗତ", lang: "ଓଡ଼ିଆ" },
+  { text: "ਸੁਆਗਤ ਹੈ", lang: "ਪੰਜਾਬੀ" },
+  { text: "स्वागत आहे", lang: "मराठी" },
+  { text: "స్వాగతం", lang: "తెలుగు" },
 ];
 
-const WhatsAppRedirect = () => {
-  const [seconds, setSeconds] = useState(COUNTDOWN_SECONDS);
-  const progress = ((COUNTDOWN_SECONDS - seconds) / COUNTDOWN_SECONDS) * 100;
+const websiteThumbnails = [
+  { title: "Portfolio", gradient: "from-cyan-500/20 to-blue-600/20", accent: "bg-cyan-400" },
+  { title: "SaaS Landing", gradient: "from-violet-500/20 to-purple-600/20", accent: "bg-violet-400" },
+  { title: "E-Commerce", gradient: "from-amber-500/20 to-orange-600/20", accent: "bg-amber-400" },
+  { title: "Dashboard", gradient: "from-emerald-500/20 to-green-600/20", accent: "bg-emerald-400" },
+  { title: "Blog", gradient: "from-rose-500/20 to-pink-600/20", accent: "bg-rose-400" },
+  { title: "Agency", gradient: "from-sky-500/20 to-indigo-600/20", accent: "bg-sky-400" },
+  { title: "Startup", gradient: "from-teal-500/20 to-cyan-600/20", accent: "bg-teal-400" },
+  { title: "Restaurant", gradient: "from-red-500/20 to-orange-600/20", accent: "bg-red-400" },
+];
 
+const MinimalWebsiteCard = ({ title, gradient, accent }: { title: string; gradient: string; accent: string }) => (
+  <div className={`flex-shrink-0 w-48 h-32 rounded-xl bg-gradient-to-br ${gradient} border border-white/10 p-3 flex flex-col justify-between`}>
+    <div className="space-y-1.5">
+      <div className={`w-5 h-5 rounded-md ${accent} opacity-80`} />
+      <div className="w-3/4 h-1.5 rounded-full bg-white/20" />
+      <div className="w-1/2 h-1.5 rounded-full bg-white/10" />
+    </div>
+    <div className="flex gap-1.5">
+      <div className="w-full h-6 rounded-md bg-white/5" />
+      <div className="w-full h-6 rounded-md bg-white/5" />
+    </div>
+    <p className="text-[10px] text-white/40 text-center">{title}</p>
+  </div>
+);
+
+const WhatsAppRedirect = () => {
+  const [elapsed, setElapsed] = useState(0);
+  const [greetingIdx, setGreetingIdx] = useState(0);
+  const redirected = useRef(false);
+
+  const progress = Math.min((elapsed / COUNTDOWN_MS) * 100, 100);
+  const secondsLeft = Math.max(Math.ceil((COUNTDOWN_MS - elapsed) / 1000), 0);
+
+  // Countdown
   useEffect(() => {
-    if (seconds <= 0) {
-      window.location.href = WHATSAPP_URL;
-      return;
-    }
-    const timer = setTimeout(() => setSeconds((s) => s - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [seconds]);
+    const timer = setInterval(() => {
+      setElapsed((prev) => {
+        const next = prev + TICK_INTERVAL;
+        if (next >= COUNTDOWN_MS && !redirected.current) {
+          redirected.current = true;
+          window.location.href = WHATSAPP_URL;
+        }
+        return next;
+      });
+    }, TICK_INTERVAL);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Cycle greetings
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGreetingIdx((i) => (i + 1) % greetings.length);
+    }, 600);
+    return () => clearInterval(interval);
+  }, []);
+
+  const doubled = [...websiteThumbnails, ...websiteThumbnails];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(220,60%,8%)] via-[hsl(220,50%,12%)] to-[hsl(220,60%,8%)] flex flex-col items-center justify-center px-4 py-12 text-white">
-      {/* Logo & brand */}
-      <Link to="/" className="mb-6">
-        <img
-          src="/lovable-uploads/4f8610eb-6b18-41eb-b5f3-6dabcc4cd82a.png"
-          alt="Laxnar AI Innovations"
-          className="h-14 w-auto"
-        />
-      </Link>
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(220,60%,6%)] via-[hsl(220,50%,10%)] to-[hsl(220,60%,6%)] flex flex-col items-center justify-between px-4 py-10 text-white overflow-hidden">
+      {/* Logo */}
+      <img
+        src="/lovable-uploads/4f8610eb-6b18-41eb-b5f3-6dabcc4cd82a.png"
+        alt="Laxnar AI Innovations"
+        className="h-12 w-auto"
+      />
 
-      {/* Redirect card */}
-      <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-white/5 backdrop-blur-lg p-8 text-center space-y-6">
-        <div className="mx-auto w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
-          <MessageCircle className="w-8 h-8 text-green-400" />
+      {/* Greeting animation */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-2 my-8">
+        <div className="h-24 flex items-center justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={greetingIdx}
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              className="text-center"
+            >
+              <p className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+                {greetings[greetingIdx].text}
+              </p>
+              <p className="text-xs text-white/40 mt-2 tracking-widest uppercase">
+                {greetings[greetingIdx].lang}
+              </p>
+            </motion.div>
+          </AnimatePresence>
         </div>
-
-        <h1 className="text-2xl md:text-3xl font-bold">
-          Connecting you to Laxnar&nbsp;AI
-        </h1>
-
-        <p className="text-gray-300 text-sm md:text-base leading-relaxed">
-          We build <span className="text-white font-medium">websites</span>,{" "}
-          <span className="text-white font-medium">Android apps</span> &{" "}
-          <span className="text-white font-medium">custom AI solutions</span>{" "}
-          for businesses — fast delivery, competitive pricing, powered by the latest AI tools.
-        </p>
-
-        {/* Countdown */}
-        <div className="space-y-2">
-          <p className="text-gray-400 text-sm">
-            Redirecting to WhatsApp in{" "}
-            <span className="text-green-400 font-bold text-lg">{seconds}</span>{" "}
-            second{seconds !== 1 && "s"}…
-          </p>
-          <Progress value={progress} className="h-1.5 bg-white/10 [&>div]:bg-green-500" />
-        </div>
-
-        <Button
-          onClick={() => (window.location.href = WHATSAPP_URL)}
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-5 text-base gap-2"
-        >
-          <MessageCircle className="w-5 h-5" />
-          Open WhatsApp Now
-          <ArrowRight className="w-4 h-4" />
-        </Button>
+        <p className="text-white/50 text-sm mt-4">We build beautiful digital experiences</p>
       </div>
 
-      {/* Services strip */}
-      <div className="mt-10 w-full max-w-3xl grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {services.map((s) => (
-          <div
-            key={s.title}
-            className="rounded-xl border border-white/10 bg-white/5 p-5 text-center space-y-2"
+      {/* Auto-scrolling thumbnails */}
+      <div className="w-full max-w-4xl overflow-hidden mb-10">
+        <p className="text-center text-white/30 text-xs uppercase tracking-widest mb-4">Our work</p>
+        <div className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[hsl(220,60%,6%)] to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[hsl(220,60%,6%)] to-transparent z-10" />
+          <motion.div
+            className="flex gap-4"
+            animate={{ x: [0, -(websiteThumbnails.length * (192 + 16))] }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           >
-            <s.icon className="w-7 h-7 mx-auto text-blue-400" />
-            <h3 className="font-semibold text-sm">{s.title}</h3>
-            <p className="text-gray-400 text-xs leading-relaxed">{s.desc}</p>
-          </div>
-        ))}
+            {doubled.map((t, i) => (
+              <MinimalWebsiteCard key={i} {...t} />
+            ))}
+          </motion.div>
+        </div>
       </div>
 
-      <p className="mt-8 text-gray-500 text-xs">
+      {/* Timer section */}
+      <div className="w-full max-w-md text-center space-y-4 mb-6">
+        <div className="mx-auto w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center">
+          <MessageCircle className="w-7 h-7 text-green-400" />
+        </div>
+        <p className="text-white/80 text-sm md:text-base">
+          You're going to have a <span className="text-green-400 font-semibold">private conversation</span> with us soon.
+        </p>
+        <div className="space-y-2">
+          <p className="text-white/40 text-xs">
+            Redirecting in{" "}
+            <span className="text-green-400 font-bold text-base">{secondsLeft}</span>{" "}
+            second{secondsLeft !== 1 && "s"}…
+          </p>
+          <Progress value={progress} className="h-1 bg-white/10 [&>div]:bg-green-500" />
+        </div>
+      </div>
+
+      <p className="text-white/20 text-[10px]">
         © {new Date().getFullYear()} Laxnar AI Innovations
       </p>
     </div>
