@@ -8,19 +8,13 @@ const COUNTDOWN_MS = 3500;
 const TICK_INTERVAL = 50;
 
 const greetings = [
-  { text: "Namaste 🙏", lang: "Hindi" },
-  { text: "Welcome", lang: "English" },
+  { text: "Namaste 🙏", lang: "English" },
   { text: "नमस्ते", lang: "हिन्दी" },
   { text: "স্বাগতম", lang: "বাংলা" },
-  { text: "நல்வரவு", lang: "தமிழ்" },
   { text: "स्वागतम्", lang: "संस्कृतम्" },
-  { text: "સ્વાગત છે", lang: "ગુજરાતી" },
-  { text: "ಸ್ವಾಗತ", lang: "ಕನ್ನಡ" },
-  { text: "സ്വാഗതം", lang: "മലയാളം" },
-  { text: "ସ୍ୱାଗତ", lang: "ଓଡ଼ିଆ" },
-  { text: "ਸੁਆਗਤ ਹੈ", lang: "ਪੰਜਾਬੀ" },
-  { text: "स्वागत आहे", lang: "मराठी" },
   { text: "స్వాగతం", lang: "తెలుగు" },
+  { text: "ಸ್ವಾಗತ", lang: "ಕನ್ನಡ" },
+  { text: "நல்வரவு", lang: "தமிழ்" },
 ];
 
 const websiteThumbnails = [
@@ -76,7 +70,7 @@ const WhatsAppRedirect = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setGreetingIdx((i) => (i + 1) % greetings.length);
-    }, 600);
+    }, 400);
     return () => clearInterval(interval);
   }, []);
 
@@ -84,12 +78,8 @@ const WhatsAppRedirect = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[hsl(220,60%,6%)] via-[hsl(220,50%,10%)] to-[hsl(220,60%,6%)] flex flex-col items-center justify-between px-4 py-10 text-white overflow-hidden">
-      {/* Logo */}
-      <img
-        src="/lovable-uploads/4f8610eb-6b18-41eb-b5f3-6dabcc4cd82a.png"
-        alt="Laxnar AI Innovations"
-        className="h-12 w-auto"
-      />
+      {/* Top spacer */}
+      <div />
 
       {/* Greeting animation */}
       <div className="flex-1 flex flex-col items-center justify-center gap-2 my-8">
@@ -100,7 +90,7 @@ const WhatsAppRedirect = () => {
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.2 }}
               className="text-center"
             >
               <p className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
