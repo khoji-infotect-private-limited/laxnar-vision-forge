@@ -77,10 +77,10 @@ const WhatsAppRedirect = () => {
   const doubled = [...websiteThumbnails, ...websiteThumbnails];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(220,60%,6%)] via-[hsl(220,50%,10%)] to-[hsl(220,60%,6%)] flex flex-col items-center justify-between px-4 py-10 text-white overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(220,60%,6%)] via-[hsl(220,50%,10%)] to-[hsl(220,60%,6%)] flex flex-col items-center justify-center gap-6 px-4 py-6 text-white overflow-hidden">
 
       {/* Greeting animation */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-2 my-8">
+      <div className="flex flex-col items-center justify-center gap-2">
         <div className="h-24 flex items-center justify-center">
           <AnimatePresence mode="wait">
             <motion.div
@@ -104,7 +104,7 @@ const WhatsAppRedirect = () => {
       </div>
 
       {/* Auto-scrolling thumbnails */}
-      <div className="w-full max-w-4xl overflow-hidden mb-10">
+      <div className="w-full max-w-4xl overflow-hidden">
         <p className="text-center text-white/30 text-xs uppercase tracking-widest mb-4">Our work</p>
         <div className="relative">
           <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[hsl(220,60%,6%)] to-transparent z-10" />
@@ -122,7 +122,7 @@ const WhatsAppRedirect = () => {
       </div>
 
       {/* Timer section */}
-      <div className="w-full max-w-md text-center space-y-4 mb-6">
+      <div className="w-full max-w-md text-center space-y-4">
         <div className="mx-auto w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center">
           <MessageCircle className="w-7 h-7 text-green-400" />
         </div>
